@@ -1,9 +1,8 @@
-
-
 import React, { useState } from 'react';
 import { User, Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, LabTestBooking } from '../types';
 import { UsersIcon, StethoscopeIcon, RupeeIcon, ActivityIcon, HourglassIcon } from './IconComponents';
 import PatientsView from './PatientsView';
+import { CONSULTATION_FEE } from '../utils/constants';
 
 interface StatCardProps {
   title: string;
@@ -52,7 +51,6 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const { users, doctors, appointments, authLogs, sessions, medicineOrders, labTestBookings } = props;
 
-    const CONSULTATION_FEE = 500;
     const totalAppointmentRevenue = appointments.length * CONSULTATION_FEE;
     const totalMedicineRevenue = medicineOrders.reduce((sum, order) => sum + order.totalAmount, 0);
     const totalLabRevenue = labTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + booking.totalAmount, 0);

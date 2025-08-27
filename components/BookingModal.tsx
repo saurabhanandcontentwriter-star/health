@@ -4,6 +4,7 @@ import { Doctor, AppointmentIn } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { FileTextIcon, QrCodeIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
+import { CONSULTATION_FEE } from '../utils/constants';
 
 interface BookingModalProps {
   doctor: Doctor;
@@ -34,7 +35,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
 
   // QR Code state
   const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const CONSULTATION_FEE = '500';
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
@@ -72,7 +72,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
     setIsLoading(true);
     
     try {
-        const url = await generateQrCode(CONSULTATION_FEE);
+        const url = await generateQrCode(String(CONSULTATION_FEE));
         setQrCodeUrl(url);
         setStep('payment');
     } catch (err: any) {

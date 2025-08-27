@@ -3,6 +3,7 @@ import { Medicine, MedicineOrder, User, Address } from '../types';
 import { ShoppingBagIcon, ArchiveIcon, TruckIcon, CheckCircleIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, RupeeIcon, QrCodeIcon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
+import AddressEditor from './AddressEditor';
 
 
 const GST_RATE = 0.18; // 18% GST
@@ -12,123 +13,6 @@ const DELIVERY_FEE = 0; // Free delivery for now
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 };
-
-interface AddressEditorProps {
-    user: User;
-    address?: Address;
-    onSave: () => void;
-    onCancel: () => void;
-    onDelete?: () => void;
-}
-
-const AddressEditor: React.FC<AddressEditorProps> = ({ user, address, onSave, onCancel, onDelete }) => {
-    const [formData, setFormData] = useState({
-        fullName: address?.fullName || `${user.firstName} ${user.lastName}`,
-        phone: address?.phone || user.phone,
-        addressLine1: address?.addressLine1 || '',
-        addressLine2: address?.addressLine2 || '',
-        city: address?.city || '',
-        state: address?.state || 'Bihar',
-        pincode: address?.pincode || '',
-        type: address?.type || 'Home' as 'Home' | 'Work',
-    });
-    const [error, setError] = useState('');
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSave = (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        if (!formData.fullName || !formData.phone || !formData.addressLine1 || !formData.city || !formData.state || !formData.pincode) {
-            setError('Please fill all required fields.');
-            return;
-        }
-        if (!/^\d{10}$/.test(formData.phone.replace(/[^0-9]/g, ''))) {
-             setError('Please enter a valid 10-digit phone number.');
-             return;
-        }
-         if (!/^\d{6}$/.test(formData.pincode)) {
-             setError('Please enter a valid 6-digit pincode.');
-             return;
-        }
-
-        const dataToSave = { ...formData, userId: user.id };
-
-        try {
-            if (address) {
-                db.updateAddress(address.id, dataToSave);
-            } else {
-                db.addAddress(dataToSave);
-            }
-            onSave();
-        } catch (err: any) {
-            setError(err.message || 'Failed to save address.');
-        }
-    };
-
-    return (
-        <form onSubmit={handleSave} className="p-4 border-2 border-blue-500 rounded-lg bg-white space-y-4">
-            <div className="flex justify-between items-center">
-                <h4 className="font-semibold text-lg text-gray-800">{address ? 'Edit Address' : 'Add New Address'}</h4>
-                {onDelete && (
-                    <button type="button" onClick={onDelete} className="text-red-600 hover:text-red-800" aria-label="Delete address">
-                        <Trash2Icon className="w-5 h-5" />
-                    </button>
-                )}
-            </div>
-             {error && <p className="text-red-600 text-sm text-center bg-red-50 p-2 rounded-md">{error}</p>}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <div>
-                    <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">Full Name</label>
-                    <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" required />
-                </div>
-                 <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
-                    <input type="text" name="phone" value={formData.phone} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" required />
-                </div>
-            </div>
-             <div>
-                <label htmlFor="addressLine1" className="block text-sm font-medium text-gray-700">Address Line 1</label>
-                <input type="text" name="addressLine1" value={formData.addressLine1} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required placeholder="House No., Building Name"/>
-            </div>
-             <div>
-                <label htmlFor="addressLine2" className="block text-sm font-medium text-gray-700">Address Line 2</label>
-                <input type="text" name="addressLine2" value={formData.addressLine2} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="Road Name, Area, Colony"/>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <div>
-                    <label htmlFor="city" className="block text-sm font-medium text-gray-700">City</label>
-                    <input type="text" name="city" value={formData.city} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required />
-                </div>
-                 <div>
-                    <label htmlFor="pincode" className="block text-sm font-medium text-gray-700">Pincode</label>
-                    <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required />
-                </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label htmlFor="state" className="block text-sm font-medium text-gray-700">State</label>
-                    <input type="text" name="state" value={formData.state} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required />
-                </div>
-                 <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-gray-700">Address Type</label>
-                    <select name="type" value={formData.type} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500">
-                        <option>Home</option>
-                        <option>Work</option>
-                    </select>
-                </div>
-            </div>
-            <div className="flex justify-end space-x-3 pt-2">
-                <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
-                <button type="submit" className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Save Address</button>
-            </div>
-        </form>
-    );
-};
-
 
 const OrderTracker: React.FC<{ status: MedicineOrder['status'] }> = ({ status }) => {
     const statuses: MedicineOrder['status'][] = ['Processing', 'Shipped', 'Delivered'];
@@ -247,11 +131,9 @@ const PharmacyView: React.FC<PharmacyViewProps> = ({ medicines, orders, addresse
     }, [medicines, searchTerm]);
 
     useEffect(() => {
-        // Pre-select the first address if one isn't already selected
         if (addresses.length > 0 && !selectedAddressId) {
             setSelectedAddressId(addresses[0].id);
         }
-        // If the selected address was deleted, reset selection
         if (selectedAddressId && !addresses.find(a => a.id === selectedAddressId)) {
             setSelectedAddressId(addresses.length > 0 ? addresses[0].id : null);
         }
@@ -324,128 +206,192 @@ const PharmacyView: React.FC<PharmacyViewProps> = ({ medicines, orders, addresse
         try {
             const result = onPlaceOrder(user.id, cart, selectedAddress, DELIVERY_FEE, PROTECT_PROMISE_FEE);
             setShowPaymentModal(false);
-            showNotification(result.message, 'success');
             setCart({});
             setViewState('shopping');
+            showNotification(result.message, 'success');
             setOrderJustPlaced(true);
-        } catch(err: any) {
+        } catch (err: any) {
             setShowPaymentModal(false);
             showNotification(err.message || "Failed to place order.", 'error');
         }
     };
-    
-    const renderCheckoutView = () => {
-        const selectedAddress = addresses.find(a => a.id === selectedAddressId);
-        const isEditing = editingAddressId !== null || isAddingNewAddress;
 
-        return (
-            <div>
-                 <button onClick={() => setViewState('shopping')} className="mb-4 text-teal-600 font-semibold hover:text-teal-800">
-                    &larr; Back to Shop
-                </button>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Login Info */}
-                        <div className="bg-white p-4 rounded-lg shadow-md border">
-                            <div className="flex justify-between items-center">
-                                <div className="flex items-center">
-                                    <span className="bg-gray-200 text-gray-700 font-bold text-sm rounded-full h-6 w-6 flex items-center justify-center mr-3">1</span>
-                                    <h3 className="text-lg font-semibold text-gray-500">LOGIN</h3>
-                                    <CheckIcon className="w-5 h-5 text-teal-500 ml-2" />
+    const renderShoppingView = () => (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative">
+            <div className="lg:col-span-2">
+                <div className="relative mb-4">
+                     <input
+                        type="text"
+                        placeholder="Search for medicines..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                    />
+                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                    {filteredMedicines.map(med => (
+                        <div key={med.id} className="bg-white p-4 rounded-lg shadow-md border flex items-start space-x-4">
+                            <img src={med.imageUrl} alt={med.name} className="w-24 h-24 object-cover rounded-md flex-shrink-0"/>
+                            <div className="flex-grow">
+                                <h3 className="font-semibold text-gray-800">{med.name}</h3>
+                                <p className="text-sm text-gray-500">{med.description}</p>
+                                <div className="mt-2 flex items-center">
+                                    <span className="font-bold text-teal-600 text-lg">{formatCurrency(med.price)}</span>
+                                    <span className="text-sm text-gray-500 line-through ml-2">{formatCurrency(med.mrp)}</span>
                                 </div>
                             </div>
-                            <p className="ml-9 mt-1 text-gray-700">{user.firstName} {user.lastName} <span className="text-gray-500 ml-2">{user.phone}</span></p>
-                        </div>
-
-                        {/* Delivery Address */}
-                        <div className="bg-white p-4 rounded-lg shadow-md border border-blue-500">
-                             <div className="flex items-center">
-                                <span className="bg-blue-600 text-white font-bold text-sm rounded-full h-6 w-6 flex items-center justify-center mr-3">2</span>
-                                <h3 className="text-lg font-semibold text-gray-800">DELIVERY ADDRESS</h3>
-                            </div>
-                            <div className="pl-9 mt-4 space-y-4">
-                                {addresses.map(address => (
-                                    editingAddressId === address.id ? (
-                                        <AddressEditor 
-                                            key={address.id}
-                                            user={user}
-                                            address={address}
-                                            onSave={() => { setEditingAddressId(null); onDataRefresh(); }}
-                                            onCancel={() => setEditingAddressId(null)}
-                                            onDelete={() => {
-                                                if (window.confirm('Are you sure you want to delete this address?')) {
-                                                    db.deleteAddress(address.id);
-                                                    setEditingAddressId(null);
-                                                    onDataRefresh();
-                                                }
-                                            }}
-                                        />
-                                    ) : (
-                                    <div key={address.id} className={`p-4 rounded-lg border cursor-pointer relative ${selectedAddressId === address.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`} onClick={() => !isEditing && setSelectedAddressId(address.id)}>
-                                        <div className="flex items-start">
-                                            <input type="radio" name="address" checked={selectedAddressId === address.id} readOnly disabled={isEditing} className="mt-1"/>
-                                            <div className="ml-3">
-                                                <div className="flex items-center">
-                                                    <p className="font-semibold">{address.fullName}</p>
-                                                    <span className="text-xs text-gray-500 bg-gray-200 rounded-full px-2 py-0.5 ml-3">{address.type}</span>
-                                                </div>
-                                                <p className="text-sm text-gray-600">{address.addressLine1}, {address.addressLine2}</p>
-                                                <p className="text-sm text-gray-600">{address.city}, {address.state} - {address.pincode}</p>
-                                                <p className="text-sm text-gray-600 mt-1">Phone: {address.phone}</p>
-                                            </div>
-                                        </div>
-                                        {!isEditing && (
-                                            <div className="absolute top-4 right-4">
-                                                <button onClick={(e) => { e.stopPropagation(); setEditingAddressId(address.id); }} className="text-sm font-semibold text-blue-600 hover:underline">Edit</button>
-                                            </div>
-                                        )}
+                            <div className="flex-shrink-0 self-center">
+                                {cart[med.id] ? (
+                                    <div className="flex items-center space-x-2">
+                                        <button onClick={() => handleUpdateQuantity(med.id, cart[med.id] - 1)} className="p-1 rounded-full bg-gray-200 hover:bg-gray-300"><MinusCircleIcon className="w-5 h-5 text-gray-600"/></button>
+                                        <span className="font-bold w-6 text-center">{cart[med.id]}</span>
+                                        <button onClick={() => handleUpdateQuantity(med.id, cart[med.id] + 1)} className="p-1 rounded-full bg-gray-200 hover:bg-gray-300"><PlusCircleIcon className="w-5 h-5 text-gray-600"/></button>
                                     </div>
-                                    )
-                                ))}
+                                ) : (
+                                    <button onClick={() => handleAddToCart(med)} className="px-4 py-1.5 bg-teal-100 text-teal-700 text-sm font-semibold rounded-lg hover:bg-teal-200">Add</button>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <div className="lg:col-span-1 lg:sticky lg:top-28 self-start">
+                <div className="bg-white p-4 rounded-xl shadow-lg border">
+                    <h3 className="text-xl font-bold mb-4">Your Cart ({cartDetails.totalItems} items)</h3>
+                    {cartDetails.items.length > 0 ? (
+                    <>
+                        <div className="space-y-3 max-h-48 overflow-y-auto pr-2 mb-4">
+                            {cartDetails.items.map(item => (
+                                <div key={item.id} className="flex justify-between items-center text-sm">
+                                    <span className="flex-grow pr-2">{item.name}</span>
+                                    <span className="font-semibold w-10 text-center">x {item.quantity}</span>
+                                    <span className="font-bold w-20 text-right">{formatCurrency(item.price * item.quantity)}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="border-t pt-4 space-y-1 text-sm">
+                            <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(cartDetails.subtotal)}</span></div>
+                            <div className="flex justify-between text-green-600"><span>Savings</span><span>-{formatCurrency(cartDetails.savings)}</span></div>
+                        </div>
+                        <button onClick={handleProceedToCheckout} className="mt-4 w-full py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700">
+                           Proceed to Checkout
+                        </button>
+                    </>
+                    ) : (
+                        <p className="text-gray-500 text-center py-8">Your cart is empty.</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 
-                                {isAddingNewAddress ? (
-                                    <AddressEditor
-                                        user={user}
-                                        onSave={() => { setIsAddingNewAddress(false); onDataRefresh(); }}
-                                        onCancel={() => setIsAddingNewAddress(false)}
+    const renderCheckoutView = () => {
+        const isEditing = editingAddressId !== null || isAddingNewAddress;
+        return (
+            <div className="max-w-4xl mx-auto">
+                <button onClick={() => setViewState('shopping')} className="text-teal-600 font-semibold mb-4">&larr; Back to Shopping</button>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 className="text-xl font-bold mb-4">Select Delivery Address</h3>
+                        <div className="space-y-3">
+                            {addresses.map(addr => (
+                                editingAddressId === addr.id ? (
+                                    <AddressEditor key={addr.id} user={user} address={addr}
+                                        onSave={() => { setEditingAddressId(null); onDataRefresh(); }}
+                                        onCancel={() => setEditingAddressId(null)}
+                                        onDelete={() => { if(window.confirm('Are you sure?')) { db.deleteAddress(addr.id); setEditingAddressId(null); onDataRefresh(); }}}
                                     />
                                 ) : (
-                                    !isEditing && (
-                                        <button onClick={() => setIsAddingNewAddress(true)} className="flex items-center justify-center w-full p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-gray-400 hover:text-gray-800 transition-colors">
-                                            <PlusCircleIcon className="w-5 h-5 mr-2" />
-                                            Add a New Address
-                                        </button>
-                                    )
-                                )}
-
-                                {selectedAddress && !isEditing && (
-                                     <button onClick={() => setShowPaymentModal(true)} disabled={isEditing} className="bg-orange-500 text-white font-bold py-3 px-8 rounded-md shadow-md hover:bg-orange-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
-                                        DELIVER HERE
-                                    </button>
-                                )}
-                            </div>
+                                <div key={addr.id} className={`p-3 rounded-lg border cursor-pointer relative ${selectedAddressId === addr.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`} onClick={() => !isEditing && setSelectedAddressId(addr.id)}>
+                                     <div className="flex items-start">
+                                        <input type="radio" name="address" checked={selectedAddressId === addr.id} readOnly disabled={isEditing} className="mt-1"/>
+                                        <div className="ml-3 text-sm">
+                                            <p className="font-semibold">{addr.fullName} ({addr.type})</p>
+                                            <p className="text-gray-600">{addr.addressLine1}, {addr.city} - {addr.pincode}</p>
+                                        </div>
+                                    </div>
+                                    {!isEditing && <button onClick={(e) => { e.stopPropagation(); setEditingAddressId(addr.id) }} className="absolute top-2 right-2 text-xs font-semibold text-blue-600 hover:underline">Edit</button>}
+                                </div>
+                                )
+                            ))}
+                            {isAddingNewAddress ? (
+                                <AddressEditor user={user} onSave={() => { setIsAddingNewAddress(false); onDataRefresh(); }} onCancel={() => setIsAddingNewAddress(false)} />
+                            ) : ( !isEditing &&
+                                <button onClick={() => setIsAddingNewAddress(true)} className="flex items-center justify-center w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+                                    <PlusCircleIcon className="w-5 h-5 mr-2" /> Add a New Address
+                                </button>
+                            )}
                         </div>
                     </div>
-                    {/* Price Details */}
-                    <div className="lg:col-span-1">
-                        <div className="sticky top-24 bg-white p-4 rounded-lg shadow-md border">
-                            <h3 className="text-sm font-bold text-gray-500 uppercase pb-2 border-b">Price Details</h3>
-                            <div className="space-y-3 mt-4">
-                                <div className="flex justify-between"><span>Price ({cartDetails.totalItems} items)</span><span>{formatCurrency(cartDetails.subtotal)}</span></div>
-                                <div className="flex justify-between"><span>GST (18%)</span><span>{formatCurrency(cartDetails.gst)}</span></div>
-                                <div className="flex justify-between"><span>Protect Promise Fee</span><span>{formatCurrency(PROTECT_PROMISE_FEE)}</span></div>
-                                <div className="flex justify-between font-bold text-lg border-t border-b py-3 my-2 border-dashed"><span>Total Payable</span><span>{formatCurrency(cartDetails.totalPayable)}</span></div>
+                    <div className="bg-white p-6 rounded-xl shadow-lg border self-start">
+                        <h3 className="text-xl font-bold mb-4">Order Summary</h3>
+                         <div className="space-y-2 text-sm">
+                            <div className="flex justify-between"><span>Subtotal ({cartDetails.totalItems} items)</span><span>{formatCurrency(cartDetails.subtotal)}</span></div>
+                            <div className="flex justify-between"><span>GST (18%)</span><span>+ {formatCurrency(cartDetails.gst)}</span></div>
+                            <div className="flex justify-between"><span>Delivery Fee</span><span className="text-green-600">FREE</span></div>
+                             <div className="flex justify-between items-center text-xs p-2 bg-gray-50 rounded-md">
+                                <div>
+                                    <p className="font-semibold text-gray-800">BHC Protect Promise</p>
+                                    <p className="text-gray-500">Secure packaging & timely delivery</p>
+                                </div>
+                                <span className="font-semibold">+ {formatCurrency(PROTECT_PROMISE_FEE)}</span>
                             </div>
-                            {cartDetails.savings > 0 &&
-                                <p className="text-green-600 font-semibold mt-4">Your Total Savings on this order {formatCurrency(cartDetails.savings)}</p>
-                            }
-                        </div>
+                         </div>
+                         <div className="border-t my-4"></div>
+                         <div className="flex justify-between font-bold text-lg">
+                            <span>Total Payable</span>
+                            <span>{formatCurrency(cartDetails.totalPayable)}</span>
+                         </div>
+                         <div className="text-center mt-4 p-2 bg-green-50 text-green-700 rounded-md text-sm font-semibold">
+                            You are saving {formatCurrency(cartDetails.savings)} on this order!
+                         </div>
+                         <button onClick={() => setShowPaymentModal(true)} className="mt-4 w-full py-3 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 disabled:bg-gray-400" disabled={!selectedAddressId || isEditing}>
+                            Place Order & Pay
+                        </button>
                     </div>
                 </div>
             </div>
-        )
-    };
-
+        );
+    }
+    
+    const renderOrdersView = () => (
+        <div className="space-y-6 max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-gray-700">Your Medicine Orders</h2>
+            {orders.length > 0 ? (
+                orders.map(order => (
+                     <div key={order.id} className="bg-white p-6 rounded-xl shadow-lg border">
+                        <div className="flex flex-col md:flex-row justify-between md:items-start border-b pb-4 mb-4">
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-800">Order #{order.id}</h3>
+                                <p className="text-sm text-gray-500">Placed on {new Date(order.orderDate).toLocaleDateString()}</p>
+                            </div>
+                            <div className="font-bold text-lg text-teal-600 mt-2 md:mt-0">{formatCurrency(order.totalAmount)}</div>
+                        </div>
+                        <OrderTracker status={order.status} />
+                         <div className="mt-4 pt-4 border-t">
+                            <button onClick={() => setExpandedOrderId(prevId => prevId === order.id ? null : order.id)} className="font-semibold text-teal-600 text-sm">
+                                {expandedOrderId === order.id ? 'Hide Details' : 'View Details'}
+                            </button>
+                            {expandedOrderId === order.id && (
+                                <div className="text-sm mt-2 space-y-2 animate-fade-in-fast">
+                                    <p><span className="font-semibold">Items:</span> {order.items.map(i => `${i.quantity}x ${i.medicineName}`).join(', ')}</p>
+                                    <p><span className="font-semibold">Deliver to:</span> {order.deliveryAddress.addressLine1}, {order.deliveryAddress.city}</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))
+            ) : (
+                <div className="text-center py-16 px-4 bg-white rounded-xl shadow-lg">
+                    <ArchiveIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-lg font-medium text-gray-900">No Orders Found</h3>
+                    <p className="mt-1 text-sm text-gray-500">You haven't placed any orders yet.</p>
+                </div>
+            )}
+        </div>
+    );
+    
     return (
         <div className="space-y-6">
             {notification && (
@@ -453,20 +399,15 @@ const PharmacyView: React.FC<PharmacyViewProps> = ({ medicines, orders, addresse
                     {notification.message}
                 </div>
             )}
-            {showPaymentModal && (
-                <PaymentModal 
-                    totalAmount={cartDetails.totalPayable}
-                    onClose={() => setShowPaymentModal(false)}
-                    onConfirm={handleConfirmAndPlaceOrder}
-                />
-            )}
+            
+            {showPaymentModal && <PaymentModal totalAmount={cartDetails.totalPayable} onClose={() => setShowPaymentModal(false)} onConfirm={handleConfirmAndPlaceOrder} />}
 
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold text-gray-800">Online Pharmacy</h1>
                 <div className="bg-white p-1 rounded-lg shadow-sm border">
                     <nav className="flex items-center space-x-1">
                         <button onClick={() => setActiveTab('shop')} className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'shop' ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-teal-100'}`}>
-                            <ShoppingBagIcon className="w-5 h-5 mr-2" /> Shop
+                            <ShoppingBagIcon className="w-5 h-5 mr-2" /> Shop Medicines
                         </button>
                         <button onClick={() => setActiveTab('orders')} className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'orders' ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-teal-100'}`}>
                             <ArchiveIcon className="w-5 h-5 mr-2" /> My Orders
@@ -475,208 +416,10 @@ const PharmacyView: React.FC<PharmacyViewProps> = ({ medicines, orders, addresse
                 </div>
             </div>
 
-            {activeTab === 'shop' && viewState === 'shopping' && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <div className="lg:col-span-2 space-y-6">
-                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                            <h2 className="text-2xl font-bold text-gray-700">Medicines & Supplies</h2>
-                             <div className="relative sm:w-72">
-                                <input
-                                    type="text"
-                                    placeholder="Search medicines by name..."
-                                    value={searchTerm}
-                                    onChange={e => setSearchTerm(e.target.value)}
-                                    className="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                />
-                                <SearchIcon className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                            </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {filteredMedicines.length > 0 ? (
-                                filteredMedicines.map(medicine => {
-                                    const isExpanded = expandedMedicineId === medicine.id;
-                                    return (
-                                        <div key={medicine.id} className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                                            {/* Clickable Header */}
-                                            <div onClick={() => handleToggleExpand(medicine.id)} className="cursor-pointer">
-                                                <img src={medicine.imageUrl} alt={medicine.name} className="h-40 w-full object-cover" />
-                                                <div className="p-4">
-                                                    <div className="flex justify-between items-start">
-                                                        <h3 className="text-lg font-bold text-gray-800 pr-2">{medicine.name}</h3>
-                                                        <svg className={`w-6 h-6 text-gray-400 transform transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                                        </svg>
-                                                    </div>
-                                                    <span className="text-xl font-semibold text-teal-600">{formatCurrency(medicine.price)}</span>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Expandable Details */}
-                                            <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isExpanded ? 'max-h-96' : 'max-h-0'}`}>
-                                                <div className="px-4 pb-4">
-                                                    <p className="text-sm text-gray-600 mt-2 pt-2 border-t border-gray-100">{medicine.description}</p>
-                                                    <div className="flex justify-between items-center mt-4">
-                                                         <div>
-                                                            <span className="text-sm text-gray-500">MRP: </span>
-                                                            <span className="text-sm text-gray-500 line-through">{formatCurrency(medicine.mrp)}</span>
-                                                        </div>
-                                                        <button 
-                                                            onClick={() => handleAddToCart(medicine)} 
-                                                            className="px-4 py-2 bg-teal-100 text-teal-800 text-sm font-semibold rounded-lg hover:bg-teal-200 transition-colors">
-                                                            Add to Cart
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )
-                                })
-                            ) : (
-                                <div className="md:col-span-2 text-center py-16 px-4 bg-gray-50 rounded-xl">
-                                    <ShoppingBagIcon className="mx-auto h-12 w-12 text-gray-400" />
-                                    <h3 className="mt-2 text-lg font-medium text-gray-900">No Medicines Found</h3>
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        Your search for "{searchTerm}" did not match any medicines.
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <div className="lg:col-span-1">
-                        <div className="sticky top-24 bg-white p-6 rounded-xl shadow-lg">
-                            <h2 className="text-2xl font-bold text-gray-700 mb-4">Your Cart ({cartDetails.totalItems})</h2>
-                            {cartDetails.items.length > 0 ? (
-                                <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2">
-                                    {cartDetails.items.map(item => (
-                                        <div key={item.id} className="flex items-center space-x-3">
-                                            <img src={item.imageUrl} alt={item.name} className="w-16 h-16 rounded-lg object-cover" />
-                                            <div className="flex-grow">
-                                                <p className="font-semibold text-gray-800">{item.name}</p>
-                                                <p className="text-sm text-gray-500">{formatCurrency(item.price!)}</p>
-                                                <div className="flex items-center space-x-2 mt-1">
-                                                    <button onClick={() => handleUpdateQuantity(item.id!, item.quantity - 1)} className="text-gray-500 hover:text-teal-600"><MinusCircleIcon className="w-5 h-5" /></button>
-                                                    <span className="font-bold text-teal-700 w-6 text-center">{item.quantity}</span>
-                                                    <button onClick={() => handleUpdateQuantity(item.id!, item.quantity + 1)} className="text-gray-500 hover:text-teal-600"><PlusCircleIcon className="w-5 h-5" /></button>
-                                                </div>
-                                            </div>
-                                            <p className="font-bold">{formatCurrency(item.price! * item.quantity)}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-10">
-                                    <ShoppingBagIcon className="w-12 h-12 mx-auto text-gray-300" />
-                                    <p className="mt-2 text-gray-500">Your cart is empty.</p>
-                                </div>
-                            )}
-                            {cartDetails.items.length > 0 && (
-                                <>
-                                    <div className="border-t border-gray-200 mt-4 pt-4 space-y-2">
-                                        <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>{formatCurrency(cartDetails.subtotal)}</span></div>
-                                        {cartDetails.savings > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>- {formatCurrency(cartDetails.savings)}</span></div>}
-                                        <div className="flex justify-between font-bold text-lg text-gray-800"><span>To Pay</span><span>{formatCurrency(cartDetails.subtotal)}</span></div>
-                                    </div>
-                                    <button 
-                                      onClick={handleProceedToCheckout}
-                                      className="mt-6 w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-teal-700 transition-colors disabled:bg-teal-400"
-                                      disabled={cartDetails.items.length === 0}
-                                    >
-                                        Proceed to Checkout
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </div>
+            {activeTab === 'shop' && (
+                viewState === 'shopping' ? renderShoppingView() : renderCheckoutView()
             )}
-            
-            {activeTab === 'shop' && viewState === 'checkout' && renderCheckoutView()}
-
-            {activeTab === 'orders' && (
-                <div className="space-y-6">
-                    <h2 className="text-2xl font-bold text-gray-700">Order History</h2>
-                    {orders.length > 0 ? (
-                        orders.map(order => {
-                             const isExpanded = expandedOrderId === order.id;
-                             return (
-                                <div key={order.id} className="bg-white rounded-xl shadow-lg overflow-hidden transition-all duration-300">
-                                    <div 
-                                        className="p-6 cursor-pointer hover:bg-gray-50"
-                                        onClick={() => setExpandedOrderId(isExpanded ? null : order.id)}
-                                        aria-expanded={isExpanded}
-                                        aria-controls={`order-details-${order.id}`}
-                                    >
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="font-bold text-lg text-gray-800">Order #{order.id}</h3>
-                                                <p className="text-sm text-gray-500">Placed on {new Date(order.orderDate).toLocaleDateString()}</p>
-                                                <p className="text-sm text-gray-500 mt-1">{order.items.reduce((sum, i) => sum + i.quantity, 0)} items</p>
-                                            </div>
-                                            <div className="text-right flex items-center">
-                                                 <div className="text-lg md:text-xl font-bold text-teal-600 mr-4">{formatCurrency(order.totalAmount)}</div>
-                                                 <svg className={`w-6 h-6 text-gray-400 transform transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </div>
-                                        </div>
-                                        <div className="mt-4">
-                                            <OrderTracker status={order.status} />
-                                        </div>
-                                    </div>
-                                    
-                                    <div 
-                                        id={`order-details-${order.id}`}
-                                        className={`transition-all duration-500 ease-in-out overflow-hidden ${isExpanded ? 'max-h-[1000px]' : 'max-h-0'}`}
-                                    >
-                                        <div className="px-6 pb-6 pt-4 border-t border-gray-200 bg-gray-50/50">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                                <div>
-                                                     <h4 className="font-semibold text-gray-700 mb-2">Items</h4>
-                                                     <div className="space-y-2">
-                                                        {order.items.map(item => (
-                                                            <div key={item.medicineId} className="flex justify-between text-sm">
-                                                                <span className="text-gray-600">{item.quantity} x {item.medicineName}</span>
-                                                                <span className="text-gray-800">{formatCurrency(item.price * item.quantity)}</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                     <h4 className="font-semibold text-gray-700 mb-2">Delivery Address</h4>
-                                                     <div className="text-sm text-gray-600 bg-white p-3 rounded-md border">
-                                                        <p className="font-medium">{order.deliveryAddress.fullName}</p>
-                                                        <p>{order.deliveryAddress.addressLine1}, {order.deliveryAddress.addressLine2}</p>
-                                                        <p>{order.deliveryAddress.city}, {order.deliveryAddress.state} - {order.deliveryAddress.pincode}</p>
-                                                        <p>Phone: {order.deliveryAddress.phone}</p>
-                                                     </div>
-                                                </div>
-                                                <div className="md:col-span-2">
-                                                    <h4 className="font-semibold text-gray-700 mb-2">Price Breakdown</h4>
-                                                    <div className="text-sm bg-white p-3 rounded-md border space-y-2">
-                                                        <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(order.subtotal)}</span></div>
-                                                        <div className="flex justify-between text-green-600"><span>Savings</span><span>- {formatCurrency(order.savings)}</span></div>
-                                                        <div className="flex justify-between"><span>GST</span><span>+ {formatCurrency(order.gst)}</span></div>
-                                                        <div className="flex justify-between"><span>Delivery Fee</span><span>+ {formatCurrency(order.deliveryFee)}</span></div>
-                                                        <div className="flex justify-between font-bold text-base border-t pt-2 mt-2"><span>Total Paid</span><span>{formatCurrency(order.totalAmount)}</span></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        })
-                    ) : (
-                         <div className="text-center py-16 px-4 bg-white rounded-xl shadow-lg">
-                            <ArchiveIcon className="mx-auto h-12 w-12 text-gray-400" />
-                            <h3 className="mt-2 text-lg font-medium text-gray-900">No Orders Found</h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                                You haven't placed any medicine orders yet.
-                            </p>
-                        </div>
-                    )}
-                </div>
-            )}
+            {activeTab === 'orders' && renderOrdersView()}
         </div>
     );
 };
