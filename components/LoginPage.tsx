@@ -1,0 +1,356 @@
+
+
+import React, { useState, useCallback, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import * as db from '../services/dbService';
+import Logo from './Logo';
+import { RefreshCwIcon } from './IconComponents';
+
+
+const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
+    const { login } = useAuth();
+    const [phone, setPhone] = useState(isAdmin ? '1111111111' : '');
+    const [otp, setOtp] = useState('');
+    const [generatedOtp, setGeneratedOtp] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [step, setStep] = useState<'entry' | 'otp'>('entry');
+    const [captcha, setCaptcha] = useState({ question: '', answer: 0 });
+    const [captchaInput, setCaptchaInput] = useState('');
+
+    const generateCaptcha = useCallback(() => {
+        const num1 = Math.floor(Math.random() * 10) + 1;
+        const num2 = Math.floor(Math.random() * 10) + 1;
+        setCaptcha({
+            question: `${num1} + ${num2}`,
+            answer: num1 + num2
+        });
+        setCaptchaInput('');
+    }, []);
+
+    useEffect(() => {
+        generateCaptcha();
+    }, [generateCaptcha]);
+
+    const handleGetOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!/^\d{10}$/.test(phone)) {
+            setError('Please enter a valid 10-digit phone number.');
+            return;
+        }
+
+        if (parseInt(captchaInput, 10) !== captcha.answer) {
+            setError('Incorrect captcha answer. Please try again.');
+            generateCaptcha();
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+        
+        const user = db.getUserByPhone(phone);
+
+        if (!user) {
+            setError(isAdmin ? 'No admin or owner account found with this number.' : 'Account does not exist. Please create an account.');
+            setIsLoading(false);
+            return;
+        }
+
+        if (isAdmin && user.role === 'patient') {
+            setError('This phone number does not belong to an admin or owner account.');
+            setIsLoading(false);
+            return;
+        }
+        
+        const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        setGeneratedOtp(newOtp);
+        setStep('otp');
+        setIsLoading(false);
+    };
+
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (otp !== generatedOtp) {
+            setError('Invalid OTP. Please try again.');
+            return;
+        }
+        setIsLoading(true);
+        setError('');
+        try {
+            await login(phone);
+        } catch (err: any) {
+            setError(err.message || "An unknown error occurred.");
+            setIsLoading(false);
+        }
+    };
+    
+    if (step === 'entry') {
+        return (
+            <form onSubmit={handleGetOtp} className="space-y-6">
+                <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input type="tel" id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Enter your 10-digit phone number" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" required />
+                </div>
+
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-1">
+                    <label htmlFor="captcha-login" className="block text-xs font-medium text-gray-700">Security Check</label>
+                    <div className="flex items-center space-x-2">
+                        <span className="p-2 bg-gray-200 text-gray-800 rounded-md font-mono text-sm">{captcha.question} = ?</span>
+                        <input
+                            type="number"
+                            id="captcha-login"
+                            value={captchaInput}
+                            onChange={e => setCaptchaInput(e.target.value)}
+                            className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm w-20 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
+                            placeholder="Answer"
+                            required
+                        />
+                        <button type="button" onClick={generateCaptcha} className="p-2 text-gray-500 hover:text-gray-700" aria-label="Refresh captcha">
+                            <RefreshCwIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+
+                {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
+                <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-teal-400 disabled:cursor-not-allowed">
+                    {isLoading ? 'Sending OTP...' : 'Get OTP'}
+                </button>
+            </form>
+        );
+    }
+
+    return (
+        <form onSubmit={handleLogin} className="space-y-6">
+            <div>
+                <label htmlFor="phone-display" className="block text-sm font-medium text-gray-700">Phone Number</label>
+                <input type="tel" id="phone-display" value={phone} className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm" disabled />
+            </div>
+            <div className="p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-700 text-center">
+                <p className="font-bold">Your OTP is: {generatedOtp}</p>
+                <p className="text-xs">This is for simulation purposes. Do not share real OTPs.</p>
+            </div>
+             <div>
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">Enter OTP</label>
+                <input type="text" id="otp" value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter the 6-digit OTP" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" required />
+            </div>
+
+            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
+            <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-teal-400 disabled:cursor-not-allowed">
+                {isLoading ? 'Verifying...' : 'Verify & Sign In'}
+            </button>
+            <button type="button" onClick={() => { setStep('entry'); setError(''); }} className="w-full text-center text-sm text-gray-600 hover:text-teal-600">
+                Change phone number
+            </button>
+        </form>
+    );
+};
+
+const SignupForm: React.FC = () => {
+    const { signup } = useAuth();
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
+    const [otp, setOtp] = useState('');
+    const [generatedOtp, setGeneratedOtp] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [step, setStep] = useState<'entry' | 'otp'>('entry');
+    const [captcha, setCaptcha] = useState({ question: '', answer: 0 });
+    const [captchaInput, setCaptchaInput] = useState('');
+
+    const generateCaptcha = useCallback(() => {
+        const num1 = Math.floor(Math.random() * 10) + 1;
+        const num2 = Math.floor(Math.random() * 10) + 1;
+        setCaptcha({
+            question: `${num1} + ${num2}`,
+            answer: num1 + num2
+        });
+        setCaptchaInput('');
+    }, []);
+
+    useEffect(() => {
+        generateCaptcha();
+    }, [generateCaptcha]);
+
+
+    const handleGetOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!firstName || !lastName || !/^\d{10}$/.test(phone)) {
+            setError('Please fill all required fields and enter a valid 10-digit phone number.');
+            return;
+        }
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+        if (parseInt(captchaInput, 10) !== captcha.answer) {
+            setError('Incorrect captcha answer. Please try again.');
+            generateCaptcha();
+            return;
+        }
+
+        setIsLoading(true);
+        setError('');
+
+        if (db.checkUserExists(phone)) {
+            setError('A user with this phone number already exists. Please sign in.');
+            setIsLoading(false);
+            return;
+        }
+
+        const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        setGeneratedOtp(newOtp);
+        setStep('otp');
+        setIsLoading(false);
+    };
+
+    const handleSignup = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (otp !== generatedOtp) {
+            setError('Invalid OTP. Please try again.');
+            return;
+        }
+        setIsLoading(true);
+        setError('');
+        try {
+            await signup(firstName, lastName, phone, email);
+        } catch (err: any) {
+            setError(err.message || "An unknown error occurred.");
+            setIsLoading(false);
+        }
+    };
+
+    if (step === 'entry') {
+        return (
+            <form onSubmit={handleGetOtp} className="space-y-4">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">First Name</label>
+                        <input type="text" id="firstName" value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="e.g., Amit" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" required />
+                    </div>
+                    <div>
+                        <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">Last Name</label>
+                        <input type="text" id="lastName" value={lastName} onChange={e => setLastName(e.target.value)} placeholder="e.g., Kumar" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" required />
+                    </div>
+                 </div>
+                 <div>
+                    <label htmlFor="signup-phone" className="block text-sm font-medium text-gray-700">Phone Number</label>
+                    <input type="tel" id="signup-phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="Enter your 10-digit phone number" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" required />
+                </div>
+                <div>
+                    <label htmlFor="signup-email" className="block text-sm font-medium text-gray-700">Email Address (Optional)</label>
+                    <input type="email" id="signup-email" value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g., amit.k@example.com" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" />
+                </div>
+
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-1">
+                    <label htmlFor="captcha-signup" className="block text-xs font-medium text-gray-700">Security Check</label>
+                    <div className="flex items-center space-x-2">
+                        <span className="p-2 bg-gray-200 text-gray-800 rounded-md font-mono text-sm">{captcha.question} = ?</span>
+                        <input
+                            type="number"
+                            id="captcha-signup"
+                            value={captchaInput}
+                            onChange={e => setCaptchaInput(e.target.value)}
+                            className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm w-20 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
+                            placeholder="Answer"
+                            required
+                        />
+                        <button type="button" onClick={generateCaptcha} className="p-2 text-gray-500 hover:text-gray-700" aria-label="Refresh captcha">
+                            <RefreshCwIcon className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+
+                {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
+                <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-teal-400 disabled:cursor-not-allowed">
+                    {isLoading ? 'Sending OTP...' : 'Get OTP'}
+                </button>
+            </form>
+        );
+    }
+
+     return (
+        <form onSubmit={handleSignup} className="space-y-6">
+            <div className="p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-700 text-center">
+                <p className="font-bold">Your OTP is: {generatedOtp}</p>
+                 <p className="text-xs">This is for simulation purposes.</p>
+            </div>
+             <div>
+                <label htmlFor="otp-signup" className="block text-sm font-medium text-gray-700">Enter OTP</label>
+                <input type="text" id="otp-signup" value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter the 6-digit OTP" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" required />
+            </div>
+
+            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+
+            <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-teal-400 disabled:cursor-not-allowed">
+                {isLoading ? 'Creating Account...' : 'Verify & Create Account'}
+            </button>
+             <button type="button" onClick={() => { setStep('entry'); setError(''); }} className="w-full text-center text-sm text-gray-600 hover:text-teal-600">
+                Go back & edit details
+            </button>
+        </form>
+    );
+}
+
+const PatientPortal: React.FC = () => {
+    const [view, setView] = useState<'login' | 'signup'>('login');
+    return (
+        <>
+            <div className="mb-6">
+                <div className="flex border-b border-gray-200">
+                    <button
+                        onClick={() => setView('login')}
+                        className={`flex-1 py-3 text-sm font-medium transition-colors ${view === 'login' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Sign In
+                    </button>
+                    <button
+                        onClick={() => setView('signup')}
+                        className={`flex-1 py-3 text-sm font-medium transition-colors ${view === 'signup' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Create Account
+                    </button>
+                </div>
+            </div>
+            {view === 'login' ? <LoginForm /> : <SignupForm />}
+        </>
+    );
+};
+
+const LoginPage: React.FC = () => {
+  const [isAdminLogin, setIsAdminLogin] = useState(false);
+  
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center py-8 px-4">
+      <div className="max-w-md w-full mx-auto">
+        <div className="flex justify-center mb-6">
+            <Logo className="h-20" />
+        </div>
+        <h2 className="text-center text-3xl font-bold text-gray-800">
+          {isAdminLogin ? 'Admin Portal' : 'Welcome'}
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          {isAdminLogin ? 'Sign in to manage the Bihar Health Connect dashboard.' : 'Sign in to find and book appointments.'}
+        </p>
+      </div>
+
+      <div className="max-w-md w-full mx-auto mt-8 bg-white p-8 border border-gray-200 rounded-xl shadow-lg">
+        {isAdminLogin ? <LoginForm isAdmin={true} /> : <PatientPortal />}
+      </div>
+       <div className="max-w-md w-full text-center mt-6">
+        <button 
+          onClick={() => setIsAdminLogin(!isAdminLogin)} 
+          className="text-sm font-medium text-teal-600 hover:text-teal-700 hover:underline focus:outline-none"
+        >
+            {isAdminLogin ? 'Switch to Patient Sign In' : 'Clinic Administrator Sign In'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;

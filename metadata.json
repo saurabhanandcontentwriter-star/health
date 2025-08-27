@@ -1,0 +1,9 @@
+{
+  "name": "Bihar Health Connect",
+  "description": "Bihar Health Connect is an application to find and book appointments with doctors in Bihar, featuring an AI Bot and doctor recommendations based on symptoms.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "prompt": ""
+}
