@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Address } from '../types';
 import * as db from '../services/dbService';
-import { UserIcon, PlusCircleIcon, EditIcon, Trash2Icon } from './IconComponents';
+import { UserIcon, PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon } from './IconComponents';
 import AddressEditor from './AddressEditor';
 
 
@@ -23,6 +23,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
     // Address Management State
     const [isAddingAddress, setIsAddingAddress] = useState(false);
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState<Address | null>(null);
+    const [deleteStep, setDeleteStep] = useState<'confirm' | 'success'>('confirm');
 
     useEffect(() => {
         if (user) {
@@ -80,11 +82,27 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
         setEditingAddress(null);
     };
 
-    const handleDeleteAddress = (id: number) => {
-        if (window.confirm("Are you sure you want to delete this address?")) {
-            db.deleteAddress(id);
+    const handleDeleteClick = (address: Address) => {
+        setShowDeleteModal(address);
+        setDeleteStep('confirm');
+    };
+
+    const confirmDelete = () => {
+        if (showDeleteModal) {
+            db.deleteAddress(showDeleteModal.id);
+            setDeleteStep('success');
             onDataRefresh();
         }
+    };
+
+    const closeDeleteModal = () => {
+        setShowDeleteModal(null);
+    };
+
+    const handleAddAnother = () => {
+        closeDeleteModal();
+        setIsAddingAddress(true);
+        setEditingAddress(null);
     };
 
     const inputClasses = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400";
@@ -170,21 +188,28 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
                                     onCancel={handleCancelAddress}
                                 />
                             ) : (
-                                <div className="flex justify-between items-start">
-                                    <div className="text-sm">
-                                        <p className="font-semibold text-gray-800 dark:text-gray-100 flex items-center">
-                                            <span className={`px-2 py-0.5 rounded-full text-xs mr-2 ${address.type === 'Home' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300'}`}>{address.type}</span>
-                                            {address.fullName}
-                                        </p>
-                                        <p className="text-gray-600 dark:text-gray-300 mt-1">{address.addressLine1}, {address.addressLine2}, {address.city} - {address.pincode}</p>
-                                        <p className="text-gray-600 dark:text-gray-300">Phone: {address.phone}</p>
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0 mt-1">
+                                        {address.type === 'Home' ? 
+                                          <HomeIcon className="w-6 h-6 text-gray-500 dark:text-gray-400" /> : 
+                                          <ShoppingBagIcon className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+                                        }
                                     </div>
-                                    <div className="flex space-x-2 flex-shrink-0 ml-4">
+                                    <div className="flex-grow">
+                                        <p className="font-bold text-lg text-gray-800 dark:text-gray-100">{address.type} Address</p>
+                                        <div className="text-sm text-gray-600 dark:text-gray-400 mt-2 space-y-1">
+                                            <p><span className="font-semibold text-gray-700 dark:text-gray-300">{address.fullName}</span></p>
+                                            <p>{address.addressLine1}{address.addressLine2 ? `, ${address.addressLine2}` : ''}</p>
+                                            <p>{address.city}, {address.state} - {address.pincode}</p>
+                                            <p>Phone: {address.phone}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex space-x-2 flex-shrink-0">
                                         <button onClick={() => setEditingAddress(address)} className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full" aria-label="Edit address">
-                                            <EditIcon className="w-4 h-4" />
+                                            <EditIcon className="w-5 h-5" />
                                         </button>
-                                        <button onClick={() => handleDeleteAddress(address.id)} className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full" aria-label="Delete address">
-                                            <Trash2Icon className="w-4 h-4" />
+                                        <button onClick={() => handleDeleteClick(address)} className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full" aria-label="Delete address">
+                                            <Trash2Icon className="w-5 h-5" />
                                         </button>
                                     </div>
                                 </div>
@@ -205,6 +230,62 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-sm text-center transform transition-all animate-fade-in-up">
+                        {deleteStep === 'confirm' ? (
+                            <>
+                                <Trash2Icon className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Delete Address?</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-6">
+                                    Are you sure? This action cannot be undone.
+                                </p>
+                                <div className="flex justify-center space-x-4">
+                                    <button onClick={closeDeleteModal} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
+                                        Cancel
+                                    </button>
+                                    <button onClick={confirmDelete} className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                                        Delete
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Address Deleted</h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-6">
+                                    The address was successfully removed from your profile.
+                                </p>
+                                <div className="flex justify-center space-x-4">
+                                    <button onClick={closeDeleteModal} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
+                                        Close
+                                    </button>
+                                    <button onClick={handleAddAnother} className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">
+                                        Add Another Address
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+             <style>{`
+            @keyframes fade-in-up {
+              0% {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+              }
+              100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+            }
+            .animate-fade-in-up {
+              animation: fade-in-up 0.3s ease-out forwards;
+            }
+          `}</style>
         </div>
     );
 };
