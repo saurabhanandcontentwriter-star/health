@@ -7,9 +7,9 @@ import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import AddressEditor from './AddressEditor';
 import { MedicineOrderTracker } from './OrderTrackers';
+import { GST_RATE } from '../utils/constants';
 
 
-const GST_RATE = 0.18; // 18% GST
 const PROTECT_PROMISE_FEE = 9;
 const DELIVERY_FEE = 0; // Free delivery for now
 

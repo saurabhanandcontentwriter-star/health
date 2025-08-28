@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import { QrCodeIcon, PlusCircleIcon, Trash2Icon, CheckCircleIcon as CheckIcon } from './IconComponents';
+import { GST_RATE } from '../utils/constants';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
@@ -167,7 +168,8 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
         
         setIsLoading(true);
         try {
-            const url = await generateQrCode(test.price.toFixed(2));
+            const totalAmount = test.price * (1 + GST_RATE);
+            const url = await generateQrCode(totalAmount.toFixed(2));
             setQrCodeUrl(url);
             setStep('payment');
         } catch (err: any) {
@@ -204,15 +206,19 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
     
     const renderDetailsForm = () => {
         const isEditing = editingAddressId !== null || isAddingNewAddress;
+        const subtotal = test.price;
+        const gst = subtotal * GST_RATE;
+        const totalAmount = subtotal + gst;
+
         return (
             <>
-                <h2 className="text-2xl font-bold text-gray-800 mb-2">Book Lab Test</h2>
-                <p className="text-gray-600 mb-6">For <span className="font-semibold text-teal-600">{test.name}</span></p>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Book Lab Test</h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">For <span className="font-semibold text-teal-600 dark:text-teal-400">{test.name}</span></p>
 
                 <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
                     {/* Address Selection */}
                     <div>
-                        <h3 className="font-semibold text-lg text-gray-800 mb-2">1. Select Address for Home Sample Collection</h3>
+                        <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100 mb-2">1. Select Address for Home Sample Collection</h3>
                         <div className="space-y-3">
                             {addresses.map(address => (
                                 editingAddressId === address.id ? (
@@ -222,12 +228,12 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
                                         onDelete={() => { if (window.confirm('Are you sure?')) { db.deleteAddress(address.id); setEditingAddressId(null); onDataRefresh(); }}}
                                     />
                                 ) : (
-                                <div key={address.id} className={`p-3 rounded-lg border cursor-pointer relative ${selectedAddressId === address.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`} onClick={() => !isEditing && setSelectedAddressId(address.id)}>
+                                <div key={address.id} className={`p-3 rounded-lg border cursor-pointer relative ${selectedAddressId === address.id ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600'}`} onClick={() => !isEditing && setSelectedAddressId(address.id)}>
                                     <div className="flex items-start">
                                         <input type="radio" name="address" checked={selectedAddressId === address.id} readOnly disabled={isEditing} className="mt-1"/>
                                         <div className="ml-3 text-sm">
-                                            <p className="font-semibold">{address.fullName}</p>
-                                            <p className="text-gray-600">{address.addressLine1}, {address.city} - {address.pincode}</p>
+                                            <p className="font-semibold text-gray-800 dark:text-gray-100">{address.fullName}</p>
+                                            <p className="text-gray-600 dark:text-gray-300">{address.addressLine1}, {address.city} - {address.pincode}</p>
                                         </div>
                                     </div>
                                     {!isEditing && (
@@ -242,7 +248,7 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
                                 <AddressEditor user={user} onSave={() => { setIsAddingNewAddress(false); onDataRefresh(); }} onCancel={() => setIsAddingNewAddress(false)} />
                             ) : (
                                 !isEditing && (
-                                    <button onClick={() => setIsAddingNewAddress(true)} className="flex items-center justify-center w-full p-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50">
+                                    <button onClick={() => setIsAddingNewAddress(true)} className="flex items-center justify-center w-full p-2 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                         <PlusCircleIcon className="w-5 h-5 mr-2" /> Add a New Address
                                     </button>
                                 )
@@ -251,29 +257,39 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
                     </div>
                     {/* Slot Selection */}
                     <div>
-                        <h3 className="font-semibold text-lg text-gray-800 mb-2">2. Select Time Slot</h3>
+                        <h3 className="font-semibold text-lg text-gray-800 dark:text-gray-100 mb-2">2. Select Time Slot</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {availableSlots.map(slot => (
-                                <button key={slot} onClick={() => setSelectedSlot(slot)} className={`p-3 rounded-lg border text-sm text-left ${selectedSlot === slot ? 'bg-teal-600 text-white border-teal-600' : 'bg-white hover:bg-teal-50'}`}>
+                                <button key={slot} onClick={() => setSelectedSlot(slot)} className={`p-3 rounded-lg border text-sm text-left ${selectedSlot === slot ? 'bg-teal-600 text-white border-teal-600' : 'bg-white dark:bg-gray-800 dark:border-gray-600 hover:bg-teal-50 dark:hover:bg-gray-700'}`}>
                                     {slot}
                                 </button>
                             ))}
                         </div>
                     </div>
                     {/* Summary */}
-                    <div className="p-4 bg-gray-100 rounded-lg">
-                        <h4 className="font-semibold">Price Summary</h4>
-                        <div className="flex justify-between mt-2">
-                            <span>Test Price:</span>
-                            <span className="font-bold">{formatCurrency(test.price)}</span>
+                     <div className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-100">Price Summary</h4>
+                        <div className="space-y-1 mt-2 text-sm">
+                            <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                                <span>Test Price:</span>
+                                <span>{formatCurrency(subtotal)}</span>
+                            </div>
+                            <div className="flex justify-between text-gray-700 dark:text-gray-300">
+                                <span>GST ({GST_RATE * 100}%):</span>
+                                <span>+ {formatCurrency(gst)}</span>
+                            </div>
+                            <div className="flex justify-between font-bold text-gray-800 dark:text-gray-100 border-t border-gray-300 dark:border-gray-500 mt-2 pt-2">
+                                <span>Total Payable:</span>
+                                <span>{formatCurrency(totalAmount)}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
                 {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
 
-                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 mt-6">
-                  <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
+                <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
+                  <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">Cancel</button>
                   <button type="button" onClick={handleProceedToPayment} disabled={isLoading || isEditing} className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-400 disabled:cursor-not-allowed">
                     {isLoading ? 'Processing...' : 'Proceed to Payment'}
                   </button>
@@ -282,37 +298,40 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
         );
     };
     
-    const renderPaymentStep = () => (
-         <div className="flex flex-col items-center text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Complete Your Payment</h2>
-            <p className="text-gray-600 mb-4">Pay <span className="font-bold">{formatCurrency(test.price)}</span> to confirm your booking for {test.name}.</p>
-            <div className="p-4 my-4 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 h-64 w-64 flex items-center justify-center">
-            {qrCodeUrl ? <img src={qrCodeUrl} alt="Payment QR Code" className="w-56 h-56 object-contain" /> : <p className="text-red-500">{error || "Generating QR..."}</p> }
+    const renderPaymentStep = () => {
+        const totalAmount = test.price * (1 + GST_RATE);
+        return (
+            <div className="flex flex-col items-center text-center">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Complete Your Payment</h2>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">Pay <span className="font-bold">{formatCurrency(totalAmount)}</span> to confirm your booking for {test.name}.</p>
+                <div className="p-4 my-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 h-64 w-64 flex items-center justify-center">
+                {qrCodeUrl ? <img src={qrCodeUrl} alt="Payment QR Code" className="w-56 h-56 object-contain" /> : <p className="text-red-500">{error || "Generating QR..."}</p> }
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Scan with any UPI app</p>
+                <div className="flex justify-center space-x-4 pt-6 w-full">
+                    <button type="button" onClick={() => setStep('details')} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">Back</button>
+                    <button type="button" onClick={handleConfirmBooking} disabled={isLoading || !qrCodeUrl} className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-400">
+                        {isLoading ? 'Confirming...' : "I've Paid, Confirm"}
+                    </button>
+                </div>
+                {error && qrCodeUrl && <p className="text-red-500 text-sm mt-4">{error}</p>}
             </div>
-            <p className="text-xs text-gray-500">Scan with any UPI app</p>
-            <div className="flex justify-center space-x-4 pt-6 w-full">
-                <button type="button" onClick={() => setStep('details')} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Back</button>
-                <button type="button" onClick={handleConfirmBooking} disabled={isLoading || !qrCodeUrl} className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-400">
-                    {isLoading ? 'Confirming...' : "I've Paid, Confirm"}
-                </button>
-            </div>
-            {error && qrCodeUrl && <p className="text-red-500 text-sm mt-4">{error}</p>}
-        </div>
-    );
+        );
+    };
     
     const renderConfirmedStep = () => (
         <div className="text-center py-8">
             <CheckIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-green-600 mb-4">Test Booked Successfully!</h3>
-            <p className="text-gray-700">Your booking for <span className="font-semibold text-teal-700">{test.name}</span> is confirmed.</p>
-            <p className="text-gray-600 mt-2">Our phlebotomist will visit for sample collection during your selected slot.</p>
+            <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">Test Booked Successfully!</h3>
+            <p className="text-gray-700 dark:text-gray-300">Your booking for <span className="font-semibold text-teal-700 dark:text-teal-400">{test.name}</span> is confirmed.</p>
+            <p className="text-gray-600 dark:text-gray-400 mt-2">Our phlebotomist will visit for sample collection during your selected slot.</p>
             <button onClick={onClose} className="mt-8 px-8 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Close</button>
         </div>
     );
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
-            <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-2xl transform transition-all">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-8 w-full max-w-2xl transform transition-all">
                 {step === 'details' && renderDetailsForm()}
                 {step === 'payment' && renderPaymentStep()}
                 {step === 'confirmed' && renderConfirmedStep()}

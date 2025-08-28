@@ -1,4 +1,5 @@
 import { Doctor, Appointment, DoctorIn, AppointmentIn, AuthLog, User, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, MedicineIn, LabTest, LabTestBooking, LabTestBookingIn, DeliveryBoy } from '../types';
+import { GST_RATE } from '../utils/constants';
 
 const DOCTORS_KEY = 'bhc-doctors';
 const APPOINTMENTS_KEY = 'bhc-appointments';
@@ -12,7 +13,6 @@ const ADDRESSES_KEY = 'bhc-addresses';
 const LAB_TESTS_KEY = 'bhc-lab-tests';
 const LAB_TEST_BOOKINGS_KEY = 'bhc-lab-test-bookings';
 const WISHLIST_KEY_PREFIX = 'bhc-wishlist-';
-const GST_RATE = 0.18;
 
 
 const initialDoctors: Doctor[] = [
@@ -624,6 +624,11 @@ export const bookLabTest = (data: LabTestBookingIn): { message: string } => {
     if (!test) throw new Error("Lab test not found.");
 
     const newId = allBookings.length > 0 ? Math.max(...allBookings.map(b => b.id)) + 1 : 1;
+    
+    const subtotal = test.price;
+    const gst = subtotal * GST_RATE;
+    const totalAmount = subtotal + gst;
+
     const newBooking: LabTestBooking = {
         id: newId,
         userId: data.userId,
@@ -633,7 +638,9 @@ export const bookLabTest = (data: LabTestBookingIn): { message: string } => {
         bookingDate: new Date().toISOString(),
         slot: data.slot,
         address: data.address,
-        totalAmount: test.price,
+        subtotal,
+        gst,
+        totalAmount,
         status: 'Booked',
         deliveryBoy: null,
         trackingHistory: [{ status: 'Booked', timestamp: new Date().toISOString() }],

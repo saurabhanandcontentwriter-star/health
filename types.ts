@@ -164,6 +164,8 @@ export interface LabTestBooking {
     bookingDate: string; // ISO string
     slot: string;
     address: Address;
+    subtotal: number;
+    gst: number;
     totalAmount: number;
     status: 'Booked' | 'Sample Collected' | 'Report Ready' | 'Cancelled';
     deliveryBoy: DeliveryBoy | null; // Represents the phlebotomist

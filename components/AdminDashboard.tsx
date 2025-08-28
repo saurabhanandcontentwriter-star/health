@@ -117,8 +117,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
   const [transferError, setTransferError] = useState('');
 
   const totalAppointmentRevenue = appointments.length * CONSULTATION_FEE;
-  const totalMedicineRevenue = allMedicineOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-  const totalLabRevenue = allLabTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + booking.totalAmount, 0);
+  const totalMedicineRevenue = allMedicineOrders.reduce((sum, order) => sum + order.subtotal, 0);
+  const totalLabRevenue = allLabTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + (booking.subtotal || booking.totalAmount), 0);
   const totalRevenue = totalAppointmentRevenue + totalMedicineRevenue + totalLabRevenue;
 
   const handleGenerateQrCode = async () => {

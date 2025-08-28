@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { User, Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, LabTestBooking } from '../types';
 import { UsersIcon, StethoscopeIcon, RupeeIcon, ActivityIcon, HourglassIcon } from './IconComponents';
@@ -54,8 +55,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
     const { users, doctors, appointments, authLogs, sessions, medicineOrders, labTestBookings } = props;
 
     const totalAppointmentRevenue = appointments.length * CONSULTATION_FEE;
-    const totalMedicineRevenue = medicineOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-    const totalLabRevenue = labTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + booking.totalAmount, 0);
+    const totalMedicineRevenue = medicineOrders.reduce((sum, order) => sum + order.subtotal, 0);
+    const totalLabRevenue = labTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + (booking.subtotal || booking.totalAmount), 0);
     const totalRevenue = totalAppointmentRevenue + totalMedicineRevenue + totalLabRevenue;
     
     const roleColors: Record<User['role'], string> = {
