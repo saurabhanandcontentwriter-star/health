@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
-import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking } from '../types';
-import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, RefreshCwIcon, PlusCircleIcon, TestTubeIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon } from './IconComponents';
+import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy } from '../types';
+import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, RefreshCwIcon, PlusCircleIcon, TestTubeIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import DoctorForm from './AddDoctorForm';
@@ -32,6 +31,53 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 };
 
+interface AssignDeliveryModalProps {
+    orderId: number;
+    orderType: 'medicine' | 'lab';
+    onClose: () => void;
+    onAssign: (orderType: 'medicine' | 'lab', orderId: number, deliveryBoy: DeliveryBoy) => void;
+}
+
+const AssignDeliveryModal: React.FC<AssignDeliveryModalProps> = ({ orderId, orderType, onClose, onAssign }) => {
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [error, setError] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        if (!name.trim() || !/^\d{10}$/.test(phone)) {
+            setError('Please enter a valid name and 10-digit phone number.');
+            return;
+        }
+        onAssign(orderType, orderId, { name, phone });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-sm">
+                <h3 className="text-lg font-bold mb-4">Assign Delivery Person</h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label htmlFor="db-name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                        <input id="db-name" type="text" value={name} onChange={e => setName(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                    </div>
+                    <div>
+                        <label htmlFor="db-phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
+                        <input id="db-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                    </div>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    <div className="flex justify-end space-x-2 pt-2">
+                        <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+                        <button type="submit" className="px-4 py-2 bg-teal-600 text-white rounded-md">Assign</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+
 interface AdminDashboardProps {
   doctors: Doctor[];
   appointments: Appointment[];
@@ -55,6 +101,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
 
   const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
   const [isMedicineFormOpen, setIsMedicineFormOpen] = useState(false);
+
+  // Assign Delivery Modal State
+  const [assignModal, setAssignModal] = useState<{ isOpen: boolean; orderId: number | null; orderType: 'medicine' | 'lab' | null }>({ isOpen: false, orderId: null, orderType: null });
+
 
   // Funds Transfer State
   const [transferStep, setTransferStep] = useState<'details' | 'otp' | 'success'>('details');
@@ -98,6 +148,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
     }
   };
 
+  const handleUpdateMedicineStatus = (orderId: number, newStatus: MedicineOrder['status']) => {
+      try {
+          db.updateMedicineOrderStatus(orderId, newStatus);
+          refreshData();
+      } catch (error) {
+          alert("Could not update status.");
+      }
+  };
+
   const handleUpdateBookingStatus = (bookingId: number, newStatus: LabTestBooking['status']) => {
       try {
           db.updateLabTestBookingStatus(bookingId, newStatus);
@@ -105,6 +164,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
       } catch (error) {
           console.error("Failed to update status:", error);
           alert("Could not update the booking status.");
+      }
+  };
+
+  const handleAssignDelivery = (orderType: 'medicine' | 'lab', orderId: number, deliveryBoy: DeliveryBoy) => {
+      try {
+          db.assignDeliveryInfo(orderType, orderId, deliveryBoy);
+          setAssignModal({ isOpen: false, orderId: null, orderType: null });
+          refreshData();
+      } catch (error) {
+          alert('Failed to assign delivery person.');
       }
   };
 
@@ -149,6 +218,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
 
   return (
     <div className="space-y-8">
+      {assignModal.isOpen && (
+         <AssignDeliveryModal 
+            orderId={assignModal.orderId!}
+            orderType={assignModal.orderType!}
+            onClose={() => setAssignModal({ isOpen: false, orderId: null, orderType: null })}
+            onAssign={handleAssignDelivery}
+         />
+      )}
       {isDoctorFormOpen && (
         <DoctorForm 
             doctorToEdit={editingDoctor} 
@@ -223,6 +300,68 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
             )}
         </div>
       </div>
+      
+      {/* Order Fulfillment */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div className="flex items-center mb-4">
+                <TruckIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Order Fulfillment</h3>
+            </div>
+            <div className="overflow-x-auto max-h-[500px]">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
+                        <tr>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Order Details</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Customer</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Delivery Person</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {[...allMedicineOrders, ...allLabTestBookings].sort((a, b) => {
+                            const dateA = 'orderDate' in a ? a.orderDate : a.bookingDate;
+                            const dateB = 'orderDate' in b ? b.orderDate : b.bookingDate;
+                            return new Date(dateB).getTime() - new Date(dateA).getTime();
+                        }).map(order => {
+                            const isMedicine = 'items' in order;
+                            const orderId = order.id;
+                            const orderType = isMedicine ? 'medicine' : 'lab';
+                            return (
+                                <tr key={`${orderType}-${orderId}`} className="dark:hover:bg-gray-700/50">
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                        <p className="font-bold">{isMedicine ? `Med Order #${orderId}` : `Lab Test #${orderId}`}</p>
+                                        <p className="text-xs text-gray-500">{isMedicine ? (order as MedicineOrder).items.length : '1'} item(s)</p>
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm">{isMedicine ? (order as MedicineOrder).deliveryAddress.fullName : (order as LabTestBooking).patientName}</td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                        {isMedicine ? (
+                                            <select value={order.status} onChange={(e) => handleUpdateMedicineStatus(orderId, e.target.value as MedicineOrder['status'])} className="p-1 border rounded-md dark:bg-gray-600">
+                                                <option>Processing</option><option>Shipped</option><option>Delivered</option>
+                                            </select>
+                                        ) : (
+                                            <select value={order.status} onChange={(e) => handleUpdateBookingStatus(orderId, e.target.value as LabTestBooking['status'])} className="p-1 border rounded-md dark:bg-gray-600">
+                                                <option>Booked</option><option>Sample Collected</option><option>Report Ready</option><option>Cancelled</option>
+                                            </select>
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-sm">
+                                        {order.deliveryBoy ? (
+                                            <div>
+                                                <p>{order.deliveryBoy.name}</p>
+                                                <p className="text-xs text-gray-500">{order.deliveryBoy.phone}</p>
+                                            </div>
+                                        ) : (
+                                            <button onClick={() => setAssignModal({ isOpen: true, orderId: orderId, orderType: orderType })} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-md hover:bg-blue-200">Assign</button>
+                                        )}
+                                    </td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
+      </div>
+
 
       {/* Management Tables */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -295,46 +434,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
         </div>
       </div>
       
-      {/* Lab Test Management */}
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-            <div className="flex items-center mb-4">
-                <TestTubeIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
-                <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Lab Test Bookings Management</h3>
-            </div>
-            <div className="overflow-x-auto max-h-96">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
-                        <tr>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Patient</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Test</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Date</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {allLabTestBookings.map(booking => (
-                            <tr key={booking.id} className="dark:hover:bg-gray-700/50">
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">{booking.patientName}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">{booking.testName}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">{new Date(booking.bookingDate).toLocaleDateString()}</td>
-                                <td className="px-4 py-2 whitespace-nowrap text-sm">
-                                    <select 
-                                        value={booking.status} 
-                                        onChange={(e) => handleUpdateBookingStatus(booking.id, e.target.value as LabTestBooking['status'])}
-                                        className="p-1 border border-gray-300 rounded-md focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-600 dark:border-gray-500"
-                                    >
-                                        <option>Booked</option>
-                                        <option>Sample Collected</option>
-                                        <option>Report Ready</option>
-                                        <option>Cancelled</option>
-                                    </select>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-      </div>
     </div>
   );
 };

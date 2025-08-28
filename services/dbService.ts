@@ -1,4 +1,4 @@
-import { Doctor, Appointment, DoctorIn, AppointmentIn, AuthLog, User, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, MedicineIn, LabTest, LabTestBooking, LabTestBookingIn } from '../types';
+import { Doctor, Appointment, DoctorIn, AppointmentIn, AuthLog, User, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, MedicineIn, LabTest, LabTestBooking, LabTestBookingIn, DeliveryBoy } from '../types';
 
 const DOCTORS_KEY = 'bhc-doctors';
 const APPOINTMENTS_KEY = 'bhc-appointments';
@@ -11,6 +11,7 @@ const MEDICINE_ORDERS_KEY = 'bhc-medicine-orders';
 const ADDRESSES_KEY = 'bhc-addresses';
 const LAB_TESTS_KEY = 'bhc-lab-tests';
 const LAB_TEST_BOOKINGS_KEY = 'bhc-lab-test-bookings';
+const WISHLIST_KEY_PREFIX = 'bhc-wishlist-';
 const GST_RATE = 0.18;
 
 
@@ -114,7 +115,7 @@ const initialMedicines: Medicine[] = [
     { id: 32, name: 'Betadine Ointment', mrp: 110.00, price: 102.00, description: 'Antiseptic ointment for cuts, wounds, and burns. 20g.', imageUrl: 'https://placehold.co/300x200/fef2f2/b91c1c?text=Betadine' },
     { id: 33, name: 'Soframycin Skin Cream', mrp: 50.00, price: 46.00, description: 'Antibiotic cream for bacterial skin infections. 30g.', imageUrl: 'https://placehold.co/300x200/fafafa/525252?text=Soframycin' },
     { id: 34, name: 'Dettol Antiseptic Liquid', mrp: 180.00, price: 170.00, description: 'Protects from germs, for first aid and personal hygiene. 250ml.', imageUrl: 'https://placehold.co/300x200/f0fdf4/16a34a?text=Dettol' },
-    { id: 35, 'name': 'Boro Plus Antiseptic Cream', mrp: 85.00, price: 80.00, description: 'Ayurvedic cream for dry skin, cuts, and cracked lips. 80ml.', imageUrl: 'https://placehold.co/300x200/ecfdf5/059669?text=Boro+Plus' },
+    { id: 35, name: 'Boro Plus Antiseptic Cream', mrp: 85.00, price: 80.00, description: 'Ayurvedic cream for dry skin, cuts, and cracked lips. 80ml.', imageUrl: 'https://placehold.co/300x200/ecfdf5/059669?text=Boro+Plus' },
     { id: 36, name: 'Azithromycin 500mg', mrp: 120.00, price: 110.00, description: 'Broad-spectrum antibiotic. 3 tablets.', imageUrl: 'https://placehold.co/300x200/ebf4ff/1d4ed8?text=Azithro' },
     { id: 37, name: 'Pantoprazole 40mg', mrp: 100.00, price: 90.00, description: 'Reduces stomach acid. 10 tablets.', imageUrl: 'https://placehold.co/300x200/fdf4ff/86198f?text=Panto' },
     { id: 38, name: 'Ondansetron 4mg', mrp: 55.00, price: 50.00, description: 'Prevents nausea and vomiting. 10 tablets.', imageUrl: 'https://placehold.co/300x200/fff7ed/9a3412?text=Ondan' },
@@ -547,10 +548,23 @@ export const placeMedicineOrder = (userId: number, cart: { [medicineId: number]:
         totalAmount,
         status: 'Processing',
         orderDate: new Date().toISOString(),
+        deliveryBoy: null,
+        trackingHistory: [{ status: 'Processing', timestamp: new Date().toISOString() }],
     };
     
     localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify([...allOrders, newOrder]));
     return { message: "Order placed successfully!" };
+};
+
+export const updateMedicineOrderStatus = (orderId: number, status: MedicineOrder['status']): void => {
+    const orders = getAllMedicineOrders();
+    const index = orders.findIndex(o => o.id === orderId);
+    if (index === -1) throw new Error("Medicine order not found.");
+    
+    orders[index].status = status;
+    orders[index].trackingHistory.push({ status, timestamp: new Date().toISOString() });
+
+    localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify(orders));
 };
 
 // Address DB functions
@@ -621,6 +635,8 @@ export const bookLabTest = (data: LabTestBookingIn): { message: string } => {
         address: data.address,
         totalAmount: test.price,
         status: 'Booked',
+        deliveryBoy: null,
+        trackingHistory: [{ status: 'Booked', timestamp: new Date().toISOString() }],
     };
 
     localStorage.setItem(LAB_TEST_BOOKINGS_KEY, JSON.stringify([...allBookings, newBooking]));
@@ -631,6 +647,83 @@ export const updateLabTestBookingStatus = (bookingId: number, status: LabTestBoo
     const bookings = getAllLabTestBookings();
     const index = bookings.findIndex(b => b.id === bookingId);
     if (index === -1) throw new Error("Booking not found.");
+    
     bookings[index].status = status;
+    bookings[index].trackingHistory.push({ status, timestamp: new Date().toISOString() });
+
     localStorage.setItem(LAB_TEST_BOOKINGS_KEY, JSON.stringify(bookings));
+};
+
+// Universal Delivery Info Assignment
+export const assignDeliveryInfo = (orderType: 'medicine' | 'lab', orderId: number, deliveryBoy: DeliveryBoy): void => {
+    if (orderType === 'medicine') {
+        const orders = getAllMedicineOrders();
+        const index = orders.findIndex(o => o.id === orderId);
+        if (index === -1) throw new Error("Medicine order not found.");
+        
+        orders[index].deliveryBoy = deliveryBoy;
+        // Optionally update status and add tracking history
+        if (orders[index].status === 'Processing') {
+            orders[index].status = 'Shipped';
+            orders[index].trackingHistory.push({ status: 'Shipped', timestamp: new Date().toISOString(), notes: `Assigned to ${deliveryBoy.name}` });
+        } else {
+            orders[index].trackingHistory.push({ status: orders[index].status, timestamp: new Date().toISOString(), notes: `Assigned to ${deliveryBoy.name}` });
+        }
+        
+        localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify(orders));
+
+    } else if (orderType === 'lab') {
+        const bookings = getAllLabTestBookings();
+        const index = bookings.findIndex(b => b.id === orderId);
+        if (index === -1) throw new Error("Lab test booking not found.");
+
+        bookings[index].deliveryBoy = deliveryBoy;
+        if (bookings[index].status === 'Booked') {
+            bookings[index].status = 'Sample Collected';
+            bookings[index].trackingHistory.push({ status: 'Sample Collected', timestamp: new Date().toISOString(), notes: `Phlebotomist: ${deliveryBoy.name}` });
+        } else {
+            bookings[index].trackingHistory.push({ status: bookings[index].status, timestamp: new Date().toISOString(), notes: `Phlebotomist: ${deliveryBoy.name}` });
+        }
+        
+        localStorage.setItem(LAB_TEST_BOOKINGS_KEY, JSON.stringify(bookings));
+    }
+};
+
+
+// Wishlist DB functions
+export const getWishlist = (userId: number): number[] => {
+    try {
+        const wishlistJson = localStorage.getItem(`${WISHLIST_KEY_PREFIX}${userId}`);
+        return wishlistJson ? JSON.parse(wishlistJson) : [];
+    } catch (e) {
+        console.error("Failed to get wishlist from localStorage", e);
+        return [];
+    }
+};
+
+export const isMedicineInWishlist = (userId: number, medicineId: number): boolean => {
+    const wishlist = getWishlist(userId);
+    return wishlist.includes(medicineId);
+};
+
+export const addToWishlist = (userId: number, medicineId: number): void => {
+    try {
+        const wishlist = getWishlist(userId);
+        if (!wishlist.includes(medicineId)) {
+            const updatedWishlist = [...wishlist, medicineId];
+            localStorage.setItem(`${WISHLIST_KEY_PREFIX}${userId}`, JSON.stringify(updatedWishlist));
+        }
+    } catch (e) {
+        console.error("Failed to add to wishlist in localStorage", e);
+    }
+};
+
+export const removeFromWishlist = (userId: number, medicineId: number): void => {
+    try {
+        const wishlist = getWishlist(userId);
+        const updatedWishlist = wishlist.filter(id => id !== medicineId);
+        localStorage.setItem(`${WISHLIST_KEY_PREFIX}${userId}`, JSON.stringify(updatedWishlist));
+    } catch (e) {
+        console.error("Failed to remove from wishlist in localStorage", e);
+    }
 };

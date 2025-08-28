@@ -103,6 +103,17 @@ export interface Medicine {
   imageUrl: string;
 }
 
+export interface DeliveryBoy {
+    name: string;
+    phone: string;
+}
+
+export interface TrackingEntry {
+    status: string;
+    timestamp: string; // ISO string
+    notes?: string;
+}
+
 export interface MedicineOrder {
   id: number;
   userId: number;
@@ -121,6 +132,8 @@ export interface MedicineOrder {
   totalAmount: number;
   status: 'Processing' | 'Shipped' | 'Delivered';
   orderDate: string; // ISO string
+  deliveryBoy: DeliveryBoy | null;
+  trackingHistory: TrackingEntry[];
 }
 
 export interface MedicineIn {
@@ -153,6 +166,8 @@ export interface LabTestBooking {
     address: Address;
     totalAmount: number;
     status: 'Booked' | 'Sample Collected' | 'Report Ready' | 'Cancelled';
+    deliveryBoy: DeliveryBoy | null; // Represents the phlebotomist
+    trackingHistory: TrackingEntry[];
 }
 
 export interface LabTestBookingIn {

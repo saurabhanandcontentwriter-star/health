@@ -123,7 +123,7 @@ const LabTestsView: React.FC<LabTestsViewProps> = ({ tests, bookings, user, addr
                                 ) : (
                                     <div>
                                         <h4 className="font-semibold text-gray-700">Booking Status</h4>
-                                        <LabTestBookingTracker status={booking.status} />
+                                        <LabTestBookingTracker booking={booking} />
                                     </div>
                                 )}
 

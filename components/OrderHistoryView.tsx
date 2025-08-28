@@ -46,14 +46,16 @@ const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, lab
                                     <div className="text-lg md:text-xl font-bold text-teal-600 dark:text-teal-400 mt-2 md:mt-0">{formatCurrency(order.totalAmount)}</div>
                                 </div>
                                 
-                                <div className="mb-6">
-                                    <MedicineOrderTracker status={order.status} />
-                                </div>
-                                 <div className="text-sm">
-                                    <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Items</h4>
-                                     <ul className="space-y-1 list-disc list-inside text-gray-600 dark:text-gray-300">
-                                        {order.items.map(item => <li key={item.medicineId}>{item.quantity} x {item.medicineName}</li>)}
-                                    </ul>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Items</h4>
+                                         <ul className="space-y-1 list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
+                                            {order.items.map(item => <li key={item.medicineId}>{item.quantity} x {item.medicineName}</li>)}
+                                        </ul>
+                                    </div>
+                                    <div className="md:border-l md:pl-6 dark:border-gray-700">
+                                         <MedicineOrderTracker order={order} />
+                                    </div>
                                 </div>
                             </div>
                         ))
@@ -89,7 +91,7 @@ const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, lab
                                 ) : (
                                     <div>
                                         <h4 className="font-semibold text-gray-700 dark:text-gray-200">Booking Status</h4>
-                                        <LabTestBookingTracker status={booking.status} />
+                                        <LabTestBookingTracker booking={booking} />
                                     </div>
                                 )}
                             </div>

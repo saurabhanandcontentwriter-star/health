@@ -1,8 +1,8 @@
 
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Medicine, MedicineOrder, User, Address } from '../types';
-import { ShoppingBagIcon, ArchiveIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon } from './IconComponents';
+import { ShoppingBagIcon, ArchiveIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon, HeartIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import AddressEditor from './AddressEditor';
@@ -17,8 +17,20 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 };
 
-const MedicineCard: React.FC<{ medicine: Medicine, onAddToCart: () => void }> = ({ medicine, onAddToCart }) => (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+const MedicineCard: React.FC<{ 
+    medicine: Medicine, 
+    onAddToCart: () => void,
+    isWishlisted: boolean,
+    onToggleWishlist: () => void
+}> = ({ medicine, onAddToCart, isWishlisted, onToggleWishlist }) => (
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1 relative">
+      <button 
+        onClick={onToggleWishlist} 
+        className="absolute top-2 right-2 z-10 p-2 bg-white/70 dark:bg-gray-900/70 rounded-full text-red-500 hover:scale-110 transition-transform"
+        aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+      >
+        <HeartIcon className="w-5 h-5" filled={isWishlisted} />
+      </button>
       <img src={medicine.imageUrl} alt={medicine.name} className="h-40 w-full object-cover" />
       <div className="p-4 flex-grow flex flex-col">
         <h3 className="text-md font-bold text-gray-800 dark:text-gray-100">{medicine.name}</h3>
@@ -253,16 +265,28 @@ const PharmacyView: React.FC<{
     onDataRefresh: () => void
 }> = ({ medicines, orders, user, addresses, onPlaceOrder, onDataRefresh }) => {
     
-    const [activeTab, setActiveTab] = useState<'browse' | 'cart' | 'checkout' | 'orders'>('browse');
+    const [activeTab, setActiveTab] = useState<'browse' | 'cart' | 'checkout' | 'orders' | 'wishlist'>('browse');
     const [searchTerm, setSearchTerm] = useState('');
     const [cart, setCart] = useState<{ [key: number]: number }>({});
+    const [wishlist, setWishlist] = useState<number[]>([]);
     const [notification, setNotification] = useState<string | null>(null);
+
+    const refreshWishlist = useCallback(() => {
+        if (user) {
+            setWishlist(db.getWishlist(user.id));
+        }
+    }, [user]);
+
+    useEffect(() => {
+        refreshWishlist();
+    }, [refreshWishlist]);
 
     const filteredMedicines = useMemo(() => {
         return medicines.filter(med => med.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [medicines, searchTerm]);
 
     const cartCount = Object.values(cart).reduce((sum, quantity) => sum + quantity, 0);
+    const wishlistCount = wishlist.length;
 
     const showNotification = (message: string) => {
         setNotification(message);
@@ -285,6 +309,19 @@ const PharmacyView: React.FC<{
         handleUpdateCart(medicineId, (cart[medicineId] || 0) + 1);
         const medicine = medicines.find(m => m.id === medicineId);
         showNotification(`${medicine?.name || 'Item'} added to cart!`);
+    };
+
+    const handleToggleWishlist = (medicineId: number) => {
+        if (!user) return;
+        const medicine = medicines.find(m => m.id === medicineId);
+        if (db.isMedicineInWishlist(user.id, medicineId)) {
+            db.removeFromWishlist(user.id, medicineId);
+            showNotification(`${medicine?.name || 'Item'} removed from wishlist!`);
+        } else {
+            db.addToWishlist(user.id, medicineId);
+            showNotification(`${medicine?.name || 'Item'} added to wishlist!`);
+        }
+        refreshWishlist();
     };
     
     const handlePlaceOrderAndReset = (userId: number, cartData: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number) => {
@@ -321,6 +358,10 @@ const PharmacyView: React.FC<{
                         <button onClick={() => setActiveTab('browse')} className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'browse' ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-teal-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}>
                             <ShoppingBagIcon className="w-5 h-5 mr-2" /> Browse
                         </button>
+                        <button onClick={() => setActiveTab('wishlist')} className={`relative flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'wishlist' ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-teal-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}>
+                            <HeartIcon className="w-5 h-5 mr-2" /> My Wishlist
+                            {wishlistCount > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{wishlistCount}</span>}
+                        </button>
                          <button onClick={() => setActiveTab('cart')} className={`relative flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'cart' || activeTab === 'checkout' ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-teal-100 dark:text-gray-300 dark:hover:bg-gray-700'}`}>
                             <ShoppingBagIcon className="w-5 h-5 mr-2" /> Cart
                             {cartCount > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{cartCount}</span>}
@@ -346,12 +387,45 @@ const PharmacyView: React.FC<{
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {filteredMedicines.map(med => (
-                            <MedicineCard key={med.id} medicine={med} onAddToCart={() => handleAddToCart(med.id)} />
+                            <MedicineCard 
+                                key={med.id} 
+                                medicine={med} 
+                                onAddToCart={() => handleAddToCart(med.id)} 
+                                isWishlisted={wishlist.includes(med.id)}
+                                onToggleWishlist={() => handleToggleWishlist(med.id)}
+                            />
                         ))}
                     </div>
                 </>
             )}
             
+            {activeTab === 'wishlist' && (
+                <div className="space-y-6">
+                    <h2 className="text-2xl font-bold text-gray-700 dark:text-gray-100">Your Wishlist</h2>
+                    {wishlist.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {medicines
+                                .filter(med => wishlist.includes(med.id))
+                                .map(med => (
+                                    <MedicineCard
+                                        key={med.id}
+                                        medicine={med}
+                                        onAddToCart={() => handleAddToCart(med.id)}
+                                        isWishlisted={true}
+                                        onToggleWishlist={() => handleToggleWishlist(med.id)}
+                                    />
+                                ))}
+                        </div>
+                    ) : (
+                         <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
+                            <HeartIcon className="mx-auto h-12 w-12 text-gray-400" />
+                            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">Your Wishlist is Empty</h3>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Add items by clicking the heart icon on any product.</p>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {activeTab === 'cart' && <CartView cart={cart} medicines={medicines} onUpdateCart={handleUpdateCart} onCheckout={() => setActiveTab('checkout')} />}
             
             {activeTab === 'checkout' && <CheckoutView cart={cart} medicines={medicines} user={user} addresses={addresses} onBackToCart={handleBackToCart} onPlaceOrder={handlePlaceOrderAndReset} onDataRefresh={onDataRefresh} />}
@@ -371,7 +445,7 @@ const PharmacyView: React.FC<{
                                 </div>
                                 
                                 <div className="mb-6">
-                                    <MedicineOrderTracker status={order.status} />
+                                    <MedicineOrderTracker order={order} />
                                 </div>
                                  <div className="text-sm">
                                     <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Items</h4>
