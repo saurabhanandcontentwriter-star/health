@@ -519,7 +519,7 @@ export const getMedicineOrdersForUser = (userId: number): MedicineOrder[] => {
     return getAllMedicineOrders().filter(order => order.userId === userId);
 };
 
-export const placeMedicineOrder = (userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number): { message: string } => {
+export const placeMedicineOrder = (userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number): MedicineOrder => {
     const allOrders = getAllMedicineOrders();
     const medicines = getMedicines();
 
@@ -553,7 +553,7 @@ export const placeMedicineOrder = (userId: number, cart: { [medicineId: number]:
     };
     
     localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify([...allOrders, newOrder]));
-    return { message: "Order placed successfully!" };
+    return newOrder;
 };
 
 export const updateMedicineOrderStatus = (orderId: number, status: MedicineOrder['status']): void => {

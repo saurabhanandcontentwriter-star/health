@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DoctorCard from './components/DoctorCard';
@@ -213,10 +211,10 @@ const App: React.FC = () => {
       setFilteredDoctors(doctors);
   };
 
-  const handlePlaceOrder = useCallback((userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number): { message: string } => {
-    const result = db.placeMedicineOrder(userId, cart, address, deliveryFee, promiseFee);
+  const handlePlaceOrder = useCallback((userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number): MedicineOrder => {
+    const newOrder = db.placeMedicineOrder(userId, cart, address, deliveryFee, promiseFee);
     refreshData();
-    return result;
+    return newOrder;
   }, [refreshData]);
 
   const handleBookLabTest = useCallback((data: LabTestBookingIn): { message: string } => {

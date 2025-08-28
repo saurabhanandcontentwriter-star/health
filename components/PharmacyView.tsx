@@ -1,8 +1,6 @@
-
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Medicine, MedicineOrder, User, Address } from '../types';
-import { ShoppingBagIcon, ArchiveIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon, HeartIcon } from './IconComponents';
+import { ShoppingBagIcon, ArchiveIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon, HeartIcon, FileTextIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import AddressEditor from './AddressEditor';
@@ -130,7 +128,7 @@ const CheckoutView: React.FC<{
     user: User,
     addresses: Address[],
     onBackToCart: () => void,
-    onPlaceOrder: (userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number) => { message: string },
+    onPlaceOrder: (userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number) => MedicineOrder,
     onDataRefresh: () => void
 }> = ({ cart, medicines, user, addresses, onBackToCart, onPlaceOrder, onDataRefresh }) => {
     
@@ -140,6 +138,7 @@ const CheckoutView: React.FC<{
     const [qrCodeUrl, setQrCodeUrl] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const [lastOrder, setLastOrder] = useState<MedicineOrder | null>(null);
 
     const cartItems = Object.keys(cart).map(id => {
         const medicine = medicines.find(m => m.id === Number(id));
@@ -183,12 +182,114 @@ const CheckoutView: React.FC<{
         setIsLoading(true);
         setError('');
         try {
-            onPlaceOrder(user.id, cart, selectedAddress, DELIVERY_FEE, PROTECT_PROMISE_FEE);
+            const newOrder = onPlaceOrder(user.id, cart, selectedAddress, DELIVERY_FEE, PROTECT_PROMISE_FEE);
+            setLastOrder(newOrder);
             setStep('confirmed');
         } catch (err: any) {
              setError(err.message || 'Failed to place order.');
         } finally {
              setIsLoading(false);
+        }
+    };
+
+    const handleDownloadReceipt = () => {
+        if (!lastOrder) return;
+        
+        const order = lastOrder;
+        const { deliveryAddress: addr } = order;
+        const itemsHtml = order.items.map(item => `
+            <tr>
+            <td>${item.quantity} x ${item.medicineName}</td>
+            <td class="text-right">${formatCurrency(item.price)}</td>
+            <td class="text-right">${formatCurrency(item.price * item.quantity)}</td>
+            </tr>
+        `).join('');
+
+        const receiptContent = `
+            <html>
+            <head>
+                <title>Order Receipt #${order.id}</title>
+                <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 2rem; background-color: #f9fafb; }
+                .container { max-width: 800px; margin: auto; background: white; border: 1px solid #e5e7eb; padding: 2.5rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+                h1 { text-align: center; color: #0d9488; margin-bottom: 0.5rem; }
+                .header-sub { text-align: center; color: #6b7280; margin-top:0; margin-bottom: 2rem; }
+                .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0; }
+                .details-grid > div > strong { display: block; margin-bottom: 0.5rem; color: #374151; }
+                .details-grid p { margin: 0; }
+                .pricing div { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f3f4f6; }
+                .pricing strong { color: #111827; }
+                .address { line-height: 1.6; color: #4b5563; }
+                table { width: 100%; border-collapse: collapse; margin: 2rem 0; }
+                th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #f3f4f6; }
+                th { background-color: #f9fafb; font-weight: 600; color: #374151; }
+                td { color: #4b5563; }
+                .text-right { text-align: right; }
+                .total { font-weight: bold; font-size: 1.2rem; color: #0d9488; border-top: 2px solid #0d9488; margin-top: 0.5rem; }
+                .paid-stamp { text-align: center; font-size: 2rem; font-weight: bold; color: #16a34a; border: 5px solid #16a34a; padding: 0.5rem 1rem; margin-top: 2.5rem; transform: rotate(-10deg); opacity: 0.7; border-radius: 0.5rem; display: inline-block; }
+                .stamp-container { text-align: center; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                <h1>Order Receipt</h1>
+                <p class="header-sub">Bihar Health Connect</p>
+                
+                <div class="details-grid">
+                    <div>
+                        <strong>Billed To:</strong>
+                        <p class="address">
+                            ${addr.fullName}<br>
+                            ${addr.addressLine1}<br>
+                            ${addr.addressLine2 ? addr.addressLine2 + '<br>' : ''}
+                            ${addr.city}, ${addr.state} - ${addr.pincode}<br>
+                            Phone: ${addr.phone}
+                        </p>
+                    </div>
+                    <div>
+                        <strong>Order Details:</strong>
+                        <p class="address">
+                            <strong>Order ID:</strong> #${order.id}<br>
+                            <strong>Order Date:</strong> ${new Date(order.orderDate).toLocaleDateString()}<br>
+                            <strong>Status:</strong> ${order.status}
+                        </p>
+                    </div>
+                </div>
+                
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-right">Price</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    ${itemsHtml}
+                    </tbody>
+                </table>
+
+                <div class="pricing">
+                    <div><span>Subtotal:</span> <span>${formatCurrency(order.subtotal)}</span></div>
+                    ${order.savings > 0 ? `<div><span style="color: #16a34a;">Savings:</span> <span style="color: #16a34a;">- ${formatCurrency(order.savings)}</span></div>` : ''}
+                    <div><span>GST:</span> <span>+ ${formatCurrency(order.gst)}</span></div>
+                    <div><span>Delivery Fee:</span> <span>+ ${formatCurrency(order.deliveryFee)}</span></div>
+                    <div class="total"><strong>Total Paid:</strong> <strong>${formatCurrency(order.totalAmount)}</strong></div>
+                </div>
+
+                <div class="stamp-container">
+                    <div class="paid-stamp">PAID</div>
+                </div>
+                </div>
+                <script>setTimeout(() => window.print(), 500);</script>
+            </body>
+            </html>
+        `;
+
+        const receiptWindow = window.open('', '_blank');
+        if (receiptWindow) {
+            receiptWindow.document.write(receiptContent);
+            receiptWindow.document.close();
         }
     };
 
@@ -248,7 +349,12 @@ const CheckoutView: React.FC<{
                     <CheckIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
                     <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">Order Placed Successfully!</h3>
                     <p className="text-gray-700 dark:text-gray-300">Your order will be delivered to your selected address soon.</p>
-                    <button onClick={onBackToCart} className="mt-8 px-8 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Continue Shopping</button>
+                    <div className="flex justify-center space-x-4 mt-8">
+                        <button onClick={handleDownloadReceipt} className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            <FileTextIcon className="w-5 h-5 mr-2"/> Download Receipt
+                        </button>
+                        <button onClick={onBackToCart} className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Continue Shopping</button>
+                    </div>
                 </div>
             )}
         </div>
@@ -261,7 +367,7 @@ const PharmacyView: React.FC<{
     orders: MedicineOrder[],
     user: User,
     addresses: Address[],
-    onPlaceOrder: (userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number) => { message: string },
+    onPlaceOrder: (userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number) => MedicineOrder,
     onDataRefresh: () => void
 }> = ({ medicines, orders, user, addresses, onPlaceOrder, onDataRefresh }) => {
     
@@ -326,9 +432,9 @@ const PharmacyView: React.FC<{
     
     const handlePlaceOrderAndReset = (userId: number, cartData: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number) => {
         try {
-            const result = onPlaceOrder(userId, cartData, address, deliveryFee, promiseFee);
+            const newOrder = onPlaceOrder(userId, cartData, address, deliveryFee, promiseFee);
             setCart({});
-            return result;
+            return newOrder;
         } catch(err) {
             console.error(err);
             throw err;
