@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
@@ -11,6 +10,12 @@ interface HeaderProps {
   currentView: string;
   setCurrentView: (view: 'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests' | 'appointmentHistory' | 'profile' | 'orderHistory') => void;
 }
+
+const getInitials = (firstName: string, lastName: string) => {
+    if (!firstName || !lastName) return '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
 
 const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView }) => {
   const { user, logout } = useAuth();
@@ -91,9 +96,15 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView }) => {
               <div className="relative" ref={menuRef}>
                 <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="flex items-center space-x-2 px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                    className="flex items-center space-x-2 pr-2 pl-1 py-1 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
                 >
-                    <UserIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                    {user.profileImageUrl ? (
+                        <img src={user.profileImageUrl} alt="Profile" className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                        <div className="w-8 h-8 bg-teal-200 dark:bg-teal-900 rounded-full flex items-center justify-center text-teal-700 dark:text-teal-200">
+                            <span className="text-sm font-bold">{getInitials(user.firstName, user.lastName)}</span>
+                        </div>
+                    )}
                     <span className="text-sm font-medium text-gray-800 dark:text-gray-200 hidden sm:block">{user.firstName}</span>
                     <ChevronDownIcon className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
                 </button>

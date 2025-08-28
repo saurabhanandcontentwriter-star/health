@@ -67,9 +67,9 @@ const initialDoctors: Doctor[] = [
     })
 ];
 
-const initialOwner: User = { id: 0, firstName: 'App', lastName: 'Owner', phone: '0000000000', email: 'owner@healthclub.com', role: 'owner' };
-const initialAdmin: User = { id: 1, firstName: 'Clinic', lastName: 'Admin', phone: '1111111111', email: 'admin@healthclub.com', role: 'admin' };
-const initialPatient: User = { id: 2, firstName: 'Saurabh', lastName: 'Anand', phone: '7667926418', email: 'saurabh@example.com', role: 'patient'};
+const initialOwner: User = { id: 0, firstName: 'App', lastName: 'Owner', phone: '0000000000', email: 'owner@healthclub.com', role: 'owner', profileImageUrl: undefined };
+const initialAdmin: User = { id: 1, firstName: 'Clinic', lastName: 'Admin', phone: '1111111111', email: 'admin@healthclub.com', role: 'admin', profileImageUrl: undefined };
+const initialPatient: User = { id: 2, firstName: 'Saurabh', lastName: 'Anand', phone: '7667926418', email: 'saurabh@example.com', role: 'patient', profileImageUrl: undefined };
 
 
 const initialPharmaCompanies: PharmaCompany[] = [
@@ -212,6 +212,29 @@ const initialLabTests: LabTest[] = [
     { id: 5, name: "Hemodialysis Session", description: "A procedure to remove waste products and excess fluid from the blood when the kidneys stop working properly.", price: 2500, mrp: 3000, preparations: "As prescribed by your nephrologist. Please bring your medical records.", includes: ["Single Session of Dialysis", "Vital Monitoring", "Medical Supervision"], imageUrl: 'https://placehold.co/300x200/e5e7eb/4b5563?text=Dialysis' }
 ];
 
+// Helper Functions
+const getFromStorage = <T>(key: string, defaultValue: T): T => {
+    try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : defaultValue;
+    } catch (error) {
+        console.error(`Error reading from localStorage key “${key}”:`, error);
+        return defaultValue;
+    }
+};
+
+const saveToStorage = <T>(key: string, value: T) => {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (error) {
+        console.error(`Error writing to localStorage key “${key}”:`, error);
+    }
+};
+
+const getNextId = <T extends { id: number }>(items: T[]): number => {
+    if (!items || items.length === 0) return 1;
+    return Math.max(...items.map(item => item.id)) + 1;
+};
 
 const seedData = () => {
     try {
@@ -221,23 +244,11 @@ const seedData = () => {
         if (!localStorage.getItem(DOCTORS_KEY)) {
             localStorage.setItem(DOCTORS_KEY, JSON.stringify(initialDoctors));
         }
-        if (!localStorage.getItem(APPOINTMENTS_KEY)) {
-            localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify([]));
-        }
-        if (!localStorage.getItem(AUTH_LOGS_KEY)) {
-            localStorage.setItem(AUTH_LOGS_KEY, JSON.stringify([]));
-        }
         if (!localStorage.getItem(PHARMA_COMPANIES_KEY)) {
             localStorage.setItem(PHARMA_COMPANIES_KEY, JSON.stringify(initialPharmaCompanies));
         }
-        if (!localStorage.getItem(SESSIONS_KEY)) {
-            localStorage.setItem(SESSIONS_KEY, JSON.stringify([]));
-        }
         if (!localStorage.getItem(MEDICINES_KEY)) {
             localStorage.setItem(MEDICINES_KEY, JSON.stringify(initialMedicines));
-        }
-        if (!localStorage.getItem(MEDICINE_ORDERS_KEY)) {
-            localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify([]));
         }
         if (!localStorage.getItem(ADDRESSES_KEY)) {
             localStorage.setItem(ADDRESSES_KEY, JSON.stringify(initialAddresses));
@@ -245,124 +256,52 @@ const seedData = () => {
         if (!localStorage.getItem(LAB_TESTS_KEY)) {
             localStorage.setItem(LAB_TESTS_KEY, JSON.stringify(initialLabTests));
         }
+        if (!localStorage.getItem(APPOINTMENTS_KEY)) {
+            localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(AUTH_LOGS_KEY)) {
+            localStorage.setItem(AUTH_LOGS_KEY, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(SESSIONS_KEY)) {
+            localStorage.setItem(SESSIONS_KEY, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(MEDICINE_ORDERS_KEY)) {
+            localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify([]));
+        }
         if (!localStorage.getItem(LAB_TEST_BOOKINGS_KEY)) {
             localStorage.setItem(LAB_TEST_BOOKINGS_KEY, JSON.stringify([]));
         }
-    } catch (error) {
-        console.error("Failed to seed data to localStorage", error);
+    } catch (e) {
+        console.error("Error seeding data:", e);
     }
 };
 
-// Seed data on initial load
-seedData();
-
-export const getUsers = (): User[] => {
-    try {
-        const users = localStorage.getItem(USERS_KEY);
-        return users ? JSON.parse(users) : [];
-    } catch (error) {
-        console.error("Failed to get users from localStorage", error);
-        return [];
-    }
-}
-
-export const getUserByPhone = (phone: string): User | undefined => {
+// User Functions
+export const getUsers = (): User[] => getFromStorage(USERS_KEY, []);
+export const getUserByPhone = (phone: string): User | undefined => getUsers().find(u => u.phone === phone);
+export const checkUserExists = (phone: string): boolean => getUsers().some(u => u.phone === phone);
+export const addUser = (userData: Omit<User, 'id' | 'role' | 'profileImageUrl'>): User => {
     const users = getUsers();
-    return users.find(u => u.phone === phone);
-}
-
-export const checkUserExists = (phone: string): boolean => {
-    const users = getUsers();
-    return users.some(u => u.phone === phone);
-};
-
-
-export const addUser = (data: Omit<User, 'id' | 'role'>): User => {
-    const users = getUsers();
-    if (getUserByPhone(data.phone)) {
-        throw new Error("A user with this phone number already exists.");
-    }
-    const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
-    const newUser: User = { 
-        id: newId, 
-        ...data,
-        role: 'patient' 
+    const newUser: User = {
+        ...userData,
+        id: getNextId(users),
+        role: 'patient',
     };
-    const updatedUsers = [...users, newUser];
-    localStorage.setItem(USERS_KEY, JSON.stringify(updatedUsers));
+    saveToStorage(USERS_KEY, [...users, newUser]);
     return newUser;
 };
-
-export const updateUser = (updatedUser: User): User => {
+export const updateUser = (updatedUser: User) => {
     const users = getUsers();
     const index = users.findIndex(u => u.id === updatedUser.id);
-    if (index === -1) {
-        throw new Error("User not found for update.");
-    }
-    users[index] = updatedUser;
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    
-    // Also update the user in the 'bhc-user' session storage if it's the current user
-    const storedUserJson = localStorage.getItem('bhc-user');
-    if (storedUserJson) {
-        const storedUser = JSON.parse(storedUserJson);
-        if (storedUser.id === updatedUser.id) {
-            localStorage.setItem('bhc-user', JSON.stringify(updatedUser));
-        }
-    }
-
-    return updatedUser;
-};
-
-
-const getAllDoctors = (): Doctor[] => {
-    try {
-        const doctors = localStorage.getItem(DOCTORS_KEY);
-        return doctors ? JSON.parse(doctors) : [];
-    } catch (error) {
-        console.error("Failed to get doctors from localStorage", error);
-        return [];
+    if (index !== -1) {
+        users[index] = updatedUser;
+        saveToStorage(USERS_KEY, users);
     }
 };
 
-export const getAllAppointments = (): Appointment[] => {
-    try {
-        const appointments = localStorage.getItem(APPOINTMENTS_KEY);
-        return appointments ? JSON.parse(appointments) : [];
-    } catch (error) {
-        console.error("Failed to get appointments from localStorage", error);
-        return [];
-    }
-};
-
-export const getAuthLogs = (): AuthLog[] => {
-    try {
-        const logs = localStorage.getItem(AUTH_LOGS_KEY);
-        return logs ? JSON.parse(logs) : [];
-    } catch (error) {
-        console.error("Failed to get auth logs from localStorage", error);
-        return [];
-    }
-};
-
-export const addAuthLog = (log: Omit<AuthLog, 'timestamp'>) => {
-    try {
-        const logsJson = localStorage.getItem(AUTH_LOGS_KEY);
-        const logs: AuthLog[] = logsJson ? JSON.parse(logsJson) : [];
-        const newLog: AuthLog = {
-            ...log,
-            timestamp: new Date().toISOString(),
-        };
-        // Keep logs to a reasonable number, e.g., last 50
-        const updatedLogs = [newLog, ...logs].slice(0, 50);
-        localStorage.setItem(AUTH_LOGS_KEY, JSON.stringify(updatedLogs));
-    } catch (error) {
-        console.error('Failed to write auth log:', error);
-    }
-};
-
+// Doctor Functions
 export const getDoctors = (location?: string, specialty?: string): Doctor[] => {
-    let doctors = getAllDoctors();
+    let doctors = getFromStorage(DOCTORS_KEY, []);
     if (location) {
         doctors = doctors.filter(d => d.location.toLowerCase().includes(location.toLowerCase()));
     }
@@ -371,173 +310,140 @@ export const getDoctors = (location?: string, specialty?: string): Doctor[] => {
     }
     return doctors;
 };
-
-export const getPharmaCompanies = (): PharmaCompany[] => {
-    try {
-        const companies = localStorage.getItem(PHARMA_COMPANIES_KEY);
-        return companies ? JSON.parse(companies) : [];
-    } catch (error) {
-        console.error("Failed to get pharma companies from localStorage", error);
-        return [];
-    }
-};
-
-export const addDoctor = (doctor: DoctorIn): { message: string, doctor_id: number } => {
-    const doctors = getAllDoctors();
-    const newId = doctors.length > 0 ? Math.max(...doctors.map(d => d.id)) + 1 : 1;
-    const newDoctor: Doctor = { id: newId, ...doctor };
-    const updatedDoctors = [...doctors, newDoctor];
-    localStorage.setItem(DOCTORS_KEY, JSON.stringify(updatedDoctors));
-    return { message: "Doctor added successfully", doctor_id: newId };
-};
-
-export const updateDoctor = (doctorToUpdate: Doctor): Doctor => {
-    const doctors = getAllDoctors();
-    const index = doctors.findIndex(d => d.id === doctorToUpdate.id);
-    if (index === -1) {
-        throw new Error("Doctor not found for update.");
-    }
-    doctors[index] = doctorToUpdate;
-    localStorage.setItem(DOCTORS_KEY, JSON.stringify(doctors));
-    return doctorToUpdate;
-};
-
-export const deleteDoctor = (id: number): void => {
-    const doctors = getAllDoctors();
-    const updatedDoctors = doctors.filter(d => d.id !== id);
-    localStorage.setItem(DOCTORS_KEY, JSON.stringify(updatedDoctors));
-};
-
-const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-});
-
-export const bookAppointment = async (data: AppointmentIn): Promise<{ message: string }> => {
-    const doctors = getAllDoctors();
-    const appointments = getAllAppointments();
-    const doctor = doctors.find(d => d.id === data.doctor_id);
-    if (!doctor) {
-      throw new Error("Doctor not found");
-    }
-
-    let reportBase64: string | undefined = undefined;
-    if (data.report_pdf_file) {
-        reportBase64 = await fileToBase64(data.report_pdf_file);
-    }
-
-    const newId = appointments.length > 0 ? Math.max(...appointments.map(a => a.id)) + 1 : 1;
-    const newAppointment: Appointment = {
-      id: newId,
-      userId: data.userId,
-      patient_name: data.patient_name,
-      doctor_id: data.doctor_id,
-      doctor_name: doctor.name,
-      appointment_date: data.appointment_date,
-      appointment_time: data.appointment_time,
-      created_at: new Date().toISOString(),
-      is_repeat_visit: data.is_repeat_visit,
-      heart_beat_rate: data.heart_beat_rate ? Number(data.heart_beat_rate) : null,
-      symptoms: data.symptoms,
-      blood_test_notes: data.blood_test_notes,
-      nutrition_notes: data.nutrition_notes,
-      report_pdf_base64: reportBase64,
+export const addDoctor = (doctorData: DoctorIn) => {
+    const doctors = getDoctors();
+    const newDoctor: Doctor = {
+        ...doctorData,
+        id: getNextId(doctors),
     };
-
-    const updatedAppointments = [...appointments, newAppointment];
-    localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(updatedAppointments));
-
-    return { message: 'Appointment booked successfully!' };
+    saveToStorage(DOCTORS_KEY, [...doctors, newDoctor]);
 };
-
-export const getAllSessions = (): UserSession[] => {
-    try {
-        const sessions = localStorage.getItem(SESSIONS_KEY);
-        return sessions ? JSON.parse(sessions) : [];
-    } catch (error) {
-        console.error("Failed to get sessions from localStorage", error);
-        return [];
+export const updateDoctor = (updatedDoctor: Doctor) => {
+    const doctors = getDoctors();
+    const index = doctors.findIndex(d => d.id === updatedDoctor.id);
+    if (index !== -1) {
+        doctors[index] = updatedDoctor;
+        saveToStorage(DOCTORS_KEY, doctors);
     }
 };
+export const deleteDoctor = (id: number) => {
+    let doctors = getDoctors();
+    doctors = doctors.filter(d => d.id !== id);
+    saveToStorage(DOCTORS_KEY, doctors);
+};
 
+// Appointment Functions
+export const getAllAppointments = (): Appointment[] => getFromStorage(APPOINTMENTS_KEY, []);
+export const bookAppointment = async (appointmentData: AppointmentIn): Promise<Appointment> => {
+    const appointments = getAllAppointments();
+    const doctor = getDoctors().find(d => d.id === appointmentData.doctor_id);
+
+    let report_pdf_base64: string | undefined = undefined;
+    if (appointmentData.report_pdf_file) {
+        const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = error => reject(error);
+        });
+        report_pdf_base64 = await fileToBase64(appointmentData.report_pdf_file);
+    }
+
+    const newAppointment: Appointment = {
+        ...appointmentData,
+        id: getNextId(appointments),
+        doctor_name: doctor ? doctor.name : 'Unknown Doctor',
+        created_at: new Date().toISOString(),
+        heart_beat_rate: appointmentData.heart_beat_rate ? Number(appointmentData.heart_beat_rate) : null,
+        report_pdf_base64,
+    };
+    saveToStorage(APPOINTMENTS_KEY, [...appointments, newAppointment]);
+    return newAppointment;
+};
+
+
+// AuthLog Functions
+export const getAuthLogs = (): AuthLog[] => getFromStorage(AUTH_LOGS_KEY, []);
+export const addAuthLog = (logData: Omit<AuthLog, 'timestamp'>) => {
+    const logs = getAuthLogs();
+    const newLog: AuthLog = {
+        ...logData,
+        timestamp: new Date().toISOString(),
+    };
+    // Keep logs to a reasonable size
+    const updatedLogs = [newLog, ...logs].slice(0, 200);
+    saveToStorage(AUTH_LOGS_KEY, updatedLogs);
+};
+
+
+// PharmaCompany Functions
+export const getPharmaCompanies = (): PharmaCompany[] => getFromStorage(PHARMA_COMPANIES_KEY, []);
+
+// Session Functions
+export const getAllSessions = (): UserSession[] => getFromStorage(SESSIONS_KEY, []);
 export const addSession = (sessionData: Omit<UserSession, 'id'>) => {
-    try {
-        const sessions = getAllSessions();
-        const newId = sessions.length > 0 ? Math.max(...sessions.map(s => s.id)) + 1 : 1;
-        const newSession: UserSession = { id: newId, ...sessionData };
-        const updatedSessions = [newSession, ...sessions].slice(0, 50); // Keep last 50 sessions
-        localStorage.setItem(SESSIONS_KEY, JSON.stringify(updatedSessions));
-    } catch (error) {
-        console.error('Failed to write session data:', error);
+    const sessions = getAllSessions();
+    const newSession: UserSession = {
+        ...sessionData,
+        id: getNextId(sessions),
+    };
+    // Keep sessions to a reasonable size
+    const updatedSessions = [newSession, ...sessions].slice(0, 500);
+    saveToStorage(SESSIONS_KEY, updatedSessions);
+};
+
+// Medicine Functions
+export const getMedicines = (): Medicine[] => getFromStorage(MEDICINES_KEY, []);
+export const addMedicine = (medicineData: MedicineIn) => {
+    const medicines = getMedicines();
+    const newMedicine: Medicine = {
+        ...medicineData,
+        id: getNextId(medicines),
+    };
+    saveToStorage(MEDICINES_KEY, [...medicines, newMedicine]);
+};
+export const updateMedicine = (updatedMedicine: Medicine) => {
+    const medicines = getMedicines();
+    const index = medicines.findIndex(m => m.id === updatedMedicine.id);
+    if (index !== -1) {
+        medicines[index] = updatedMedicine;
+        saveToStorage(MEDICINES_KEY, medicines);
     }
 };
-
-
-// Medicine DB functions
-export const getMedicines = (): Medicine[] => {
-    try {
-        const medicines = localStorage.getItem(MEDICINES_KEY);
-        return medicines ? JSON.parse(medicines) : [];
-    } catch (e) { console.error(e); return []; }
+export const deleteMedicine = (id: number) => {
+    let medicines = getMedicines();
+    medicines = medicines.filter(m => m.id !== id);
+    saveToStorage(MEDICINES_KEY, medicines);
 };
 
-export const addMedicine = (medicine: MedicineIn): Medicine => {
-    const medicines = getMedicines();
-    const newId = medicines.length > 0 ? Math.max(...medicines.map(m => m.id)) + 1 : 1;
-    const newMedicine: Medicine = { id: newId, ...medicine };
-    localStorage.setItem(MEDICINES_KEY, JSON.stringify([...medicines, newMedicine]));
-    return newMedicine;
-};
-
-export const updateMedicine = (medicineToUpdate: Medicine): Medicine => {
-    const medicines = getMedicines();
-    const index = medicines.findIndex(m => m.id === medicineToUpdate.id);
-    if (index === -1) throw new Error("Medicine not found for update.");
-    medicines[index] = medicineToUpdate;
-    localStorage.setItem(MEDICINES_KEY, JSON.stringify(medicines));
-    return medicineToUpdate;
-};
-
-export const deleteMedicine = (id: number): void => {
-    const medicines = getMedicines();
-    const updatedMedicines = medicines.filter(m => m.id !== id);
-    localStorage.setItem(MEDICINES_KEY, JSON.stringify(updatedMedicines));
-};
-
-
-// Medicine Order DB functions
-export const getAllMedicineOrders = (): MedicineOrder[] => {
-    try {
-        const orders = localStorage.getItem(MEDICINE_ORDERS_KEY);
-        return orders ? JSON.parse(orders) : [];
-    } catch (e) { console.error(e); return []; }
-};
-
+// Medicine Order Functions
+export const getAllMedicineOrders = (): MedicineOrder[] => getFromStorage(MEDICINE_ORDERS_KEY, []);
 export const getMedicineOrdersForUser = (userId: number): MedicineOrder[] => {
-    return getAllMedicineOrders().filter(order => order.userId === userId);
+    return getAllMedicineOrders().filter(o => o.userId === userId);
 };
-
 export const placeMedicineOrder = (userId: number, cart: { [medicineId: number]: number }, address: Address, deliveryFee: number, promiseFee: number): MedicineOrder => {
-    const allOrders = getAllMedicineOrders();
-    const medicines = getMedicines();
-
-    const items = Object.entries(cart).map(([id, quantity]) => {
-        const medicine = medicines.find(m => m.id === Number(id));
-        if (!medicine) throw new Error(`Medicine with ID ${id} not found.`);
-        return { medicineId: medicine.id, medicineName: medicine.name, quantity, price: medicine.price, mrp: medicine.mrp };
+    const orders = getAllMedicineOrders();
+    const allMedicines = getMedicines();
+    
+    const items = Object.entries(cart).map(([medicineId, quantity]) => {
+        const medicine = allMedicines.find(m => m.id === Number(medicineId));
+        if (!medicine) throw new Error(`Medicine with ID ${medicineId} not found`);
+        return {
+            medicineId: medicine.id,
+            medicineName: medicine.name,
+            quantity,
+            price: medicine.price,
+            mrp: medicine.mrp,
+        };
     });
 
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const totalMrp = items.reduce((sum, item) => sum + (item.mrp * item.quantity), 0);
-    const savings = totalMrp - subtotal;
+    const savings = items.reduce((sum, item) => sum + ((item.mrp - item.price) * item.quantity), 0);
     const gst = subtotal * GST_RATE;
     const totalAmount = subtotal + gst + deliveryFee + promiseFee;
-    
-    const newId = allOrders.length > 0 ? Math.max(...allOrders.map(o => o.id)) + 1 : 1;
+
     const newOrder: MedicineOrder = {
-        id: newId,
+        id: getNextId(orders),
         userId,
         items,
         deliveryAddress: address,
@@ -549,88 +455,70 @@ export const placeMedicineOrder = (userId: number, cart: { [medicineId: number]:
         status: 'Processing',
         orderDate: new Date().toISOString(),
         deliveryBoy: null,
-        trackingHistory: [{ status: 'Processing', timestamp: new Date().toISOString() }],
+        trackingHistory: [{ status: 'Order Placed', timestamp: new Date().toISOString(), notes: 'We have received your order.' }],
     };
-    
-    localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify([...allOrders, newOrder]));
+
+    saveToStorage(MEDICINE_ORDERS_KEY, [...orders, newOrder]);
     return newOrder;
 };
-
-export const updateMedicineOrderStatus = (orderId: number, status: MedicineOrder['status']): void => {
+export const updateMedicineOrderStatus = (orderId: number, status: MedicineOrder['status']) => {
     const orders = getAllMedicineOrders();
     const index = orders.findIndex(o => o.id === orderId);
-    if (index === -1) throw new Error("Medicine order not found.");
-    
-    orders[index].status = status;
-    orders[index].trackingHistory.push({ status, timestamp: new Date().toISOString() });
-
-    localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify(orders));
+    if (index !== -1) {
+        orders[index].status = status;
+        orders[index].trackingHistory.push({ status, timestamp: new Date().toISOString() });
+        saveToStorage(MEDICINE_ORDERS_KEY, orders);
+    } else {
+        throw new Error(`Order with ID ${orderId} not found.`);
+    }
 };
 
-// Address DB functions
+// Address Functions
 export const getAddressesForUser = (userId: number): Address[] => {
-     try {
-        const allAddresses = localStorage.getItem(ADDRESSES_KEY);
-        if (!allAddresses) return [];
-        return JSON.parse(allAddresses).filter((addr: Address) => addr.userId === userId);
-    } catch (e) { console.error(e); return []; }
+    const allAddresses = getFromStorage<Address[]>(ADDRESSES_KEY, []);
+    return allAddresses.filter(a => a.userId === userId);
+};
+export const addAddress = (addressData: Omit<Address, 'id'>) => {
+    const addresses = getFromStorage<Address[]>(ADDRESSES_KEY, []);
+    const newAddress: Address = {
+        ...addressData,
+        id: getNextId(addresses),
+    };
+    saveToStorage(ADDRESSES_KEY, [...addresses, newAddress]);
+};
+export const updateAddress = (id: number, updatedAddressData: Omit<Address, 'id' | 'userId'>) => {
+    const addresses = getFromStorage<Address[]>(ADDRESSES_KEY, []);
+    const index = addresses.findIndex(a => a.id === id);
+    if (index !== -1) {
+        addresses[index] = { ...addresses[index], ...updatedAddressData, id };
+        saveToStorage(ADDRESSES_KEY, addresses);
+    }
+};
+export const deleteAddress = (id: number) => {
+    let addresses = getFromStorage<Address[]>(ADDRESSES_KEY, []);
+    addresses = addresses.filter(a => a.id !== id);
+    saveToStorage(ADDRESSES_KEY, addresses);
 };
 
-export const addAddress = (address: Omit<Address, 'id'>): Address => {
-    const allAddresses = JSON.parse(localStorage.getItem(ADDRESSES_KEY) || '[]');
-    const newId = allAddresses.length > 0 ? Math.max(...allAddresses.map((a: Address) => a.id)) + 1 : 1;
-    const newAddress: Address = { id: newId, ...address };
-    localStorage.setItem(ADDRESSES_KEY, JSON.stringify([...allAddresses, newAddress]));
-    return newAddress;
-};
+// Lab Test Functions
+export const getLabTests = (): LabTest[] => getFromStorage(LAB_TESTS_KEY, []);
 
-export const updateAddress = (id: number, updatedAddress: Omit<Address, 'id'>): Address => {
-    const allAddresses = JSON.parse(localStorage.getItem(ADDRESSES_KEY) || '[]');
-    const index = allAddresses.findIndex((a: Address) => a.id === id);
-    if (index === -1) throw new Error("Address not found.");
-    allAddresses[index] = { id, ...updatedAddress };
-    localStorage.setItem(ADDRESSES_KEY, JSON.stringify(allAddresses));
-    return allAddresses[index];
-};
-
-export const deleteAddress = (id: number): void => {
-    const allAddresses = JSON.parse(localStorage.getItem(ADDRESSES_KEY) || '[]');
-    const updatedAddresses = allAddresses.filter((a: Address) => a.id !== id);
-    localStorage.setItem(ADDRESSES_KEY, JSON.stringify(updatedAddresses));
-};
-
-// Lab Test DB Functions
-export const getLabTests = (): LabTest[] => {
-    try {
-        const tests = localStorage.getItem(LAB_TESTS_KEY);
-        return tests ? JSON.parse(tests) : [];
-    } catch (e) { console.error(e); return []; }
-};
-
-export const getAllLabTestBookings = (): LabTestBooking[] => {
-    try {
-        const bookings = localStorage.getItem(LAB_TEST_BOOKINGS_KEY);
-        return bookings ? JSON.parse(bookings) : [];
-    } catch (e) { console.error(e); return []; }
-};
-
+// Lab Test Booking Functions
+export const getAllLabTestBookings = (): LabTestBooking[] => getFromStorage(LAB_TEST_BOOKINGS_KEY, []);
 export const getLabTestBookingsForUser = (userId: number): LabTestBooking[] => {
     return getAllLabTestBookings().filter(b => b.userId === userId);
 };
-
 export const bookLabTest = (data: LabTestBookingIn): { message: string } => {
-    const allBookings = getAllLabTestBookings();
+    const bookings = getAllLabTestBookings();
     const test = getLabTests().find(t => t.id === data.testId);
     if (!test) throw new Error("Lab test not found.");
 
-    const newId = allBookings.length > 0 ? Math.max(...allBookings.map(b => b.id)) + 1 : 1;
-    
     const subtotal = test.price;
     const gst = subtotal * GST_RATE;
     const totalAmount = subtotal + gst;
 
     const newBooking: LabTestBooking = {
-        id: newId,
+        id: getNextId(bookings),
         userId: data.userId,
         patientName: data.patientName,
         testId: data.testId,
@@ -643,94 +531,73 @@ export const bookLabTest = (data: LabTestBookingIn): { message: string } => {
         totalAmount,
         status: 'Booked',
         deliveryBoy: null,
-        trackingHistory: [{ status: 'Booked', timestamp: new Date().toISOString() }],
+        trackingHistory: [{ status: 'Booking Confirmed', timestamp: new Date().toISOString() }],
     };
 
-    localStorage.setItem(LAB_TEST_BOOKINGS_KEY, JSON.stringify([...allBookings, newBooking]));
-    return { message: 'Lab test booked successfully!' };
+    saveToStorage(LAB_TEST_BOOKINGS_KEY, [...bookings, newBooking]);
+    return { message: "Test booked successfully!" };
 };
-
-export const updateLabTestBookingStatus = (bookingId: number, status: LabTestBooking['status']): void => {
+export const updateLabTestBookingStatus = (bookingId: number, status: LabTestBooking['status']) => {
     const bookings = getAllLabTestBookings();
     const index = bookings.findIndex(b => b.id === bookingId);
-    if (index === -1) throw new Error("Booking not found.");
-    
-    bookings[index].status = status;
-    bookings[index].trackingHistory.push({ status, timestamp: new Date().toISOString() });
-
-    localStorage.setItem(LAB_TEST_BOOKINGS_KEY, JSON.stringify(bookings));
+    if (index !== -1) {
+        bookings[index].status = status;
+        bookings[index].trackingHistory.push({ status, timestamp: new Date().toISOString() });
+        saveToStorage(LAB_TEST_BOOKINGS_KEY, bookings);
+    } else {
+        throw new Error(`Booking with ID ${bookingId} not found.`);
+    }
 };
 
-// Universal Delivery Info Assignment
-export const assignDeliveryInfo = (orderType: 'medicine' | 'lab', orderId: number, deliveryBoy: DeliveryBoy): void => {
+// Delivery / Phlebotomist Functions
+export const assignDeliveryInfo = (orderType: 'medicine' | 'lab', orderId: number, deliveryBoy: DeliveryBoy) => {
     if (orderType === 'medicine') {
         const orders = getAllMedicineOrders();
         const index = orders.findIndex(o => o.id === orderId);
-        if (index === -1) throw new Error("Medicine order not found.");
-        
-        orders[index].deliveryBoy = deliveryBoy;
-        // Optionally update status and add tracking history
-        if (orders[index].status === 'Processing') {
+        if (index !== -1) {
+            orders[index].deliveryBoy = deliveryBoy;
             orders[index].status = 'Shipped';
-            orders[index].trackingHistory.push({ status: 'Shipped', timestamp: new Date().toISOString(), notes: `Assigned to ${deliveryBoy.name}` });
-        } else {
-            orders[index].trackingHistory.push({ status: orders[index].status, timestamp: new Date().toISOString(), notes: `Assigned to ${deliveryBoy.name}` });
+            orders[index].trackingHistory.push({
+                status: 'Out for Delivery',
+                timestamp: new Date().toISOString(),
+                notes: `Assigned to ${deliveryBoy.name} (${deliveryBoy.phone})`,
+            });
+            saveToStorage(MEDICINE_ORDERS_KEY, orders);
         }
-        
-        localStorage.setItem(MEDICINE_ORDERS_KEY, JSON.stringify(orders));
-
-    } else if (orderType === 'lab') {
+    } else {
         const bookings = getAllLabTestBookings();
         const index = bookings.findIndex(b => b.id === orderId);
-        if (index === -1) throw new Error("Lab test booking not found.");
-
-        bookings[index].deliveryBoy = deliveryBoy;
-        if (bookings[index].status === 'Booked') {
-            bookings[index].status = 'Sample Collected';
-            bookings[index].trackingHistory.push({ status: 'Sample Collected', timestamp: new Date().toISOString(), notes: `Phlebotomist: ${deliveryBoy.name}` });
-        } else {
-            bookings[index].trackingHistory.push({ status: bookings[index].status, timestamp: new Date().toISOString(), notes: `Phlebotomist: ${deliveryBoy.name}` });
+        if (index !== -1) {
+            bookings[index].deliveryBoy = deliveryBoy;
+            bookings[index].trackingHistory.push({
+                status: 'Phlebotomist Assigned',
+                timestamp: new Date().toISOString(),
+                notes: `${deliveryBoy.name} (${deliveryBoy.phone}) will come for sample collection.`
+            });
+            saveToStorage(LAB_TEST_BOOKINGS_KEY, bookings);
         }
-        
-        localStorage.setItem(LAB_TEST_BOOKINGS_KEY, JSON.stringify(bookings));
     }
 };
 
 
-// Wishlist DB functions
+// Wishlist Functions
 export const getWishlist = (userId: number): number[] => {
-    try {
-        const wishlistJson = localStorage.getItem(`${WISHLIST_KEY_PREFIX}${userId}`);
-        return wishlistJson ? JSON.parse(wishlistJson) : [];
-    } catch (e) {
-        console.error("Failed to get wishlist from localStorage", e);
-        return [];
-    }
+    return getFromStorage(`${WISHLIST_KEY_PREFIX}${userId}`, []);
 };
-
 export const isMedicineInWishlist = (userId: number, medicineId: number): boolean => {
+    return getWishlist(userId).includes(medicineId);
+};
+export const addToWishlist = (userId: number, medicineId: number) => {
     const wishlist = getWishlist(userId);
-    return wishlist.includes(medicineId);
-};
-
-export const addToWishlist = (userId: number, medicineId: number): void => {
-    try {
-        const wishlist = getWishlist(userId);
-        if (!wishlist.includes(medicineId)) {
-            const updatedWishlist = [...wishlist, medicineId];
-            localStorage.setItem(`${WISHLIST_KEY_PREFIX}${userId}`, JSON.stringify(updatedWishlist));
-        }
-    } catch (e) {
-        console.error("Failed to add to wishlist in localStorage", e);
+    if (!wishlist.includes(medicineId)) {
+        saveToStorage(`${WISHLIST_KEY_PREFIX}${userId}`, [...wishlist, medicineId]);
     }
 };
-
-export const removeFromWishlist = (userId: number, medicineId: number): void => {
-    try {
-        const wishlist = getWishlist(userId);
-        const updatedWishlist = wishlist.filter(id => id !== medicineId);
-        localStorage.setItem(`${WISHLIST_KEY_PREFIX}${userId}`, JSON.stringify(updatedWishlist));
-    } catch (e) {
-        console.error("Failed to remove from wishlist in localStorage", e);
-    }
+export const removeFromWishlist = (userId: number, medicineId: number) => {
+    let wishlist = getWishlist(userId);
+    wishlist = wishlist.filter(id => id !== medicineId);
+    saveToStorage(`${WISHLIST_KEY_PREFIX}${userId}`, wishlist);
 };
+
+// Initialize the mock database on first load
+seedData();

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Address } from '../types';
 import * as db from '../services/dbService';
-import { UserIcon, PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon } from './IconComponents';
+import { PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon, CameraIcon } from './IconComponents';
 import AddressEditor from './AddressEditor';
 
 
@@ -12,6 +13,11 @@ interface UserProfileProps {
     onDataRefresh: () => void;
 }
 
+const getInitials = (firstName: string, lastName: string) => {
+    if (!firstName || !lastName) return '';
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
 const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses, onDataRefresh }) => {
     const { user, refreshAuth } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
@@ -19,6 +25,10 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    
+    // Image upload state
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [imageError, setImageError] = useState('');
 
     // Address Management State
     const [isAddingAddress, setIsAddingAddress] = useState(false);
@@ -40,6 +50,41 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
         return <div>Loading user profile...</div>;
     }
 
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setImageError('');
+        setSuccess('');
+        setError('');
+
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+            setImageError('Please select a valid image file (JPG, PNG, WEBP).');
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) { // 2MB limit
+            setImageError('File size must be less than 2MB.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+            const base64Image = reader.result as string;
+            try {
+                const updatedUser = { ...user, profileImageUrl: base64Image };
+                db.updateUser(updatedUser);
+                refreshAuth();
+                setSuccess('Profile image updated successfully!');
+            } catch (err) {
+                setError('Failed to update profile image.');
+            }
+        };
+        reader.onerror = () => {
+            setError('Failed to read the image file.');
+        };
+    };
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -53,6 +98,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
         setIsLoading(true);
         setError('');
         setSuccess('');
+        setImageError('');
         try {
             const updatedUser: User = {
                 ...user,
@@ -112,9 +158,29 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8">
                 <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
-                    <div className="flex-shrink-0">
-                        <div className="w-32 h-32 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-300">
-                            <UserIcon className="w-20 h-20" />
+                    <div className="relative group w-32 h-32 flex-shrink-0">
+                        {user.profileImageUrl ? (
+                            <img src={user.profileImageUrl} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-md" />
+                        ) : (
+                            <div className="w-32 h-32 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-300 border-4 border-white dark:border-gray-700 shadow-md">
+                                <span className="text-4xl font-bold">{getInitials(user.firstName, user.lastName)}</span>
+                            </div>
+                        )}
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            accept="image/png, image/jpeg, image/webp"
+                        />
+                        <div
+                            className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-full flex items-center justify-center cursor-pointer transition-opacity duration-300"
+                            onClick={() => fileInputRef.current?.click()}
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Upload profile picture"
+                        >
+                            <CameraIcon className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         </div>
                     </div>
                     <div className="flex-grow w-full">
@@ -131,6 +197,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
 
                         {success && <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 rounded-md text-sm">{success}</div>}
                         {error && <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 rounded-md text-sm">{error}</div>}
+                        {imageError && <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 rounded-md text-sm">{imageError}</div>}
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -153,7 +220,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
                             </div>
                             {isEditing && (
                                 <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
-                                    <button type="button" onClick={() => { setIsEditing(false); setError(''); setSuccess(''); }} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
+                                    <button type="button" onClick={() => { setIsEditing(false); setError(''); setSuccess(''); setImageError(''); }} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
                                         Cancel
                                     </button>
                                     <button type="submit" disabled={isLoading} className="px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors disabled:bg-teal-400 disabled:cursor-not-allowed">

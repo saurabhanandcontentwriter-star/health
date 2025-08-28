@@ -1,5 +1,4 @@
 
-
 export interface User {
     id: number;
     firstName: string;
@@ -7,6 +6,7 @@ export interface User {
     phone: string;
     email?: string;
     role: 'patient' | 'admin' | 'owner';
+    profileImageUrl?: string;
 }
 
 export interface Doctor {
