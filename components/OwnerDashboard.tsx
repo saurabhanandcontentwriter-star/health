@@ -56,7 +56,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
 
     const totalAppointmentRevenue = appointments.length * CONSULTATION_FEE;
     const totalMedicineRevenue = medicineOrders.reduce((sum, order) => sum + order.subtotal, 0);
-    const totalLabRevenue = labTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + (booking.subtotal || booking.totalAmount), 0);
+    const totalLabRevenue = labTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + booking.subtotal, 0);
     const totalRevenue = totalAppointmentRevenue + totalMedicineRevenue + totalLabRevenue;
     
     const roleColors: Record<User['role'], string> = {

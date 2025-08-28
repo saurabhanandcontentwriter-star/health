@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { LabTest, Address, User, LabTestBookingIn } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -319,15 +320,77 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
         );
     };
     
-    const renderConfirmedStep = () => (
-        <div className="text-center py-8">
-            <CheckIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">Test Booked Successfully!</h3>
-            <p className="text-gray-700 dark:text-gray-300">Your booking for <span className="font-semibold text-teal-700 dark:text-teal-400">{test.name}</span> is confirmed.</p>
-            <p className="text-gray-600 dark:text-gray-400 mt-2">Our phlebotomist will visit for sample collection during your selected slot.</p>
-            <button onClick={onClose} className="mt-8 px-8 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Close</button>
-        </div>
-    );
+    const renderConfirmedStep = () => {
+      const handleDownloadReceipt = () => {
+        const subtotal = test.price;
+        const gst = subtotal * GST_RATE;
+        const totalAmount = subtotal + gst;
+        const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+        
+        const receiptContent = `
+          <html>
+            <head>
+              <title>Lab Test Receipt #${new Date().getTime()}</title>
+              <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 2rem; background-color: #f9fafb; }
+                .container { max-width: 600px; margin: auto; background: white; border: 1px solid #e5e7eb; padding: 2.5rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+                h1 { text-align: center; color: #0d9488; margin-bottom: 0.5rem; }
+                .header-sub { text-align: center; color: #6b7280; margin-top:0; margin-bottom: 2rem; }
+                .details, .pricing { margin: 2rem 0; }
+                .details p, .pricing div { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f3f4f6; }
+                .details p:last-child, .pricing div:last-child { border-bottom: none; }
+                .details p strong, .pricing strong { color: #111827; }
+                .total { font-weight: bold; font-size: 1.2rem; color: #0d9488; border-top: 2px solid #0d9488; margin-top: 0.5rem; }
+                .paid-stamp { text-align: center; font-size: 2rem; font-weight: bold; color: #16a34a; border: 5px solid #16a34a; padding: 0.5rem 1rem; margin-top: 2.5rem; transform: rotate(-10deg); opacity: 0.7; border-radius: 0.5rem; display: inline-block; }
+                .stamp-container { text-align: center; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <h1>Lab Test Receipt</h1>
+                <p class="header-sub">Bihar Health Connect</p>
+                <div class="details">
+                  <p><strong>Patient Name:</strong> <span>${user.firstName} ${user.lastName}</span></p>
+                  <p><strong>Test Name:</strong> <span>${test.name}</span></p>
+                  <p><strong>Collection Slot:</strong> <span>${selectedSlot}</span></p>
+                  <p><strong>Collection Address:</strong> <span>${selectedAddress?.addressLine1}, ${selectedAddress?.city} - ${selectedAddress?.pincode}</span></p>
+                </div>
+                <div class="pricing">
+                  <div><span>Test Price:</span> <span>${formatCurrency(subtotal)}</span></div>
+                  <div><span>GST (${GST_RATE * 100}%):</span> <span>+ ${formatCurrency(gst)}</span></div>
+                  <div class="total"><strong>Total Paid:</strong> <strong>${formatCurrency(totalAmount)}</strong></div>
+                </div>
+                <div class="stamp-container">
+                   <div class="paid-stamp">PAID</div>
+                </div>
+              </div>
+              <script>setTimeout(() => window.print(), 500);</script>
+            </body>
+          </html>
+        `;
+        const receiptWindow = window.open('', '_blank');
+        if (receiptWindow) {
+          receiptWindow.document.write(receiptContent);
+          receiptWindow.document.close();
+        }
+      };
+
+      return (
+          <div className="text-center py-8">
+              <CheckIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
+              <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">Test Booked Successfully!</h3>
+              <p className="text-gray-700 dark:text-gray-300">Your booking for <span className="font-semibold text-teal-700 dark:text-teal-400">{test.name}</span> is confirmed.</p>
+              <p className="text-gray-600 dark:text-gray-400 mt-2">Our phlebotomist will visit for sample collection during your selected slot.</p>
+              <div className="flex justify-center space-x-4 mt-8">
+                  <button onClick={handleDownloadReceipt} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                      Download Receipt
+                  </button>
+                  <button onClick={onClose} className="px-8 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Close</button>
+              </div>
+          </div>
+      );
+    };
+
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">

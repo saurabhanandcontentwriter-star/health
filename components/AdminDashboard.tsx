@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy } from '../types';
 import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, RefreshCwIcon, PlusCircleIcon, TestTubeIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon } from './IconComponents';
@@ -118,7 +119,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
 
   const totalAppointmentRevenue = appointments.length * CONSULTATION_FEE;
   const totalMedicineRevenue = allMedicineOrders.reduce((sum, order) => sum + order.subtotal, 0);
-  const totalLabRevenue = allLabTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + (booking.subtotal || booking.totalAmount), 0);
+  const totalLabRevenue = allLabTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + booking.subtotal, 0);
   const totalRevenue = totalAppointmentRevenue + totalMedicineRevenue + totalLabRevenue;
 
   const handleGenerateQrCode = async () => {
