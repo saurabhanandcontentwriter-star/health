@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MedicineOrder, LabTestBooking } from '../types';
 import { MedicineOrderTracker, LabTestBookingTracker } from './OrderTrackers';
-import { ArchiveIcon, TestTubeIcon, ShoppingBagIcon } from './IconComponents';
+import { ArchiveIcon, TestTubeIcon, ShoppingBagIcon, FileTextIcon } from './IconComponents';
 
 interface OrderHistoryViewProps {
     medicineOrders: MedicineOrder[];
@@ -17,6 +17,104 @@ const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, lab
     
     const sortedMedicineOrders = [...medicineOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
     const sortedLabTestBookings = [...labTestBookings].sort((a, b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
+
+    const handleDownloadMedicineReceipt = (order: MedicineOrder) => {
+      const { deliveryAddress: addr } = order;
+      const itemsHtml = order.items.map(item => `
+        <tr>
+          <td>${item.quantity} x ${item.medicineName}</td>
+          <td class="text-right">${formatCurrency(item.price)}</td>
+          <td class="text-right">${formatCurrency(item.price * item.quantity)}</td>
+        </tr>
+      `).join('');
+
+      const receiptContent = `
+        <html>
+          <head>
+            <title>Order Receipt #${order.id}</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 2rem; background-color: #f9fafb; }
+              .container { max-width: 800px; margin: auto; background: white; border: 1px solid #e5e7eb; padding: 2.5rem; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); }
+              h1 { text-align: center; color: #0d9488; margin-bottom: 0.5rem; }
+              .header-sub { text-align: center; color: #6b7280; margin-top:0; margin-bottom: 2rem; }
+              .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 2rem 0; }
+              .details-grid > div > strong { display: block; margin-bottom: 0.5rem; color: #374151; }
+              .details-grid p { margin: 0; }
+              .pricing div { display: flex; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid #f3f4f6; }
+              .pricing strong { color: #111827; }
+              .address { line-height: 1.6; color: #4b5563; }
+              table { width: 100%; border-collapse: collapse; margin: 2rem 0; }
+              th, td { text-align: left; padding: 0.75rem; border-bottom: 1px solid #f3f4f6; }
+              th { background-color: #f9fafb; font-weight: 600; color: #374151; }
+              td { color: #4b5563; }
+              .text-right { text-align: right; }
+              .total { font-weight: bold; font-size: 1.2rem; color: #0d9488; border-top: 2px solid #0d9488; margin-top: 0.5rem; }
+              .paid-stamp { text-align: center; font-size: 2rem; font-weight: bold; color: #16a34a; border: 5px solid #16a34a; padding: 0.5rem 1rem; margin-top: 2.5rem; transform: rotate(-10deg); opacity: 0.7; border-radius: 0.5rem; display: inline-block; }
+              .stamp-container { text-align: center; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <h1>Order Receipt</h1>
+              <p class="header-sub">Bihar Health Connect</p>
+              
+              <div class="details-grid">
+                <div>
+                    <strong>Billed To:</strong>
+                    <p class="address">
+                        ${addr.fullName}<br>
+                        ${addr.addressLine1}<br>
+                        ${addr.addressLine2 ? addr.addressLine2 + '<br>' : ''}
+                        ${addr.city}, ${addr.state} - ${addr.pincode}<br>
+                        Phone: ${addr.phone}
+                    </p>
+                </div>
+                <div>
+                    <strong>Order Details:</strong>
+                    <p class="address">
+                        <strong>Order ID:</strong> #${order.id}<br>
+                        <strong>Order Date:</strong> ${new Date(order.orderDate).toLocaleDateString()}<br>
+                        <strong>Status:</strong> ${order.status}
+                    </p>
+                </div>
+              </div>
+              
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsHtml}
+                </tbody>
+              </table>
+
+              <div class="pricing">
+                <div><span>Subtotal:</span> <span>${formatCurrency(order.subtotal)}</span></div>
+                ${order.savings > 0 ? `<div><span style="color: #16a34a;">Savings:</span> <span style="color: #16a34a;">- ${formatCurrency(order.savings)}</span></div>` : ''}
+                <div><span>GST:</span> <span>+ ${formatCurrency(order.gst)}</span></div>
+                <div><span>Delivery Fee:</span> <span>+ ${formatCurrency(order.deliveryFee)}</span></div>
+                <div class="total"><strong>Total Paid:</strong> <strong>${formatCurrency(order.totalAmount)}</strong></div>
+              </div>
+
+              <div class="stamp-container">
+                 <div class="paid-stamp">PAID</div>
+              </div>
+            </div>
+            <script>setTimeout(() => window.print(), 500);</script>
+          </body>
+        </html>
+      `;
+
+      const receiptWindow = window.open('', '_blank');
+      if (receiptWindow) {
+        receiptWindow.document.write(receiptContent);
+        receiptWindow.document.close();
+      }
+    };
 
     return (
         <div className="space-y-6">
@@ -43,7 +141,16 @@ const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, lab
                                         <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">Order #{order.id}</h3>
                                         <p className="text-sm text-gray-500 dark:text-gray-400">Placed on {new Date(order.orderDate).toLocaleDateString()}</p>
                                     </div>
-                                    <div className="text-lg md:text-xl font-bold text-teal-600 dark:text-teal-400 mt-2 md:mt-0">{formatCurrency(order.totalAmount)}</div>
+                                    <div className="flex flex-col md:items-end mt-4 md:mt-0 space-y-2">
+                                        <div className="text-lg md:text-xl font-bold text-teal-600 dark:text-teal-400">{formatCurrency(order.totalAmount)}</div>
+                                        <button
+                                            onClick={() => handleDownloadMedicineReceipt(order)}
+                                            className="inline-flex items-center px-3 py-1.5 bg-blue-100 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-200 transition-colors dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-900"
+                                        >
+                                            <FileTextIcon className="w-4 h-4 mr-2" />
+                                            Download Receipt
+                                        </button>
+                                    </div>
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
