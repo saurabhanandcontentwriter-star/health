@@ -1,16 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User } from '../types';
+import { User, Address } from '../types';
 import * as db from '../services/dbService';
-import { UserIcon } from './IconComponents';
+import { UserIcon, PlusCircleIcon, EditIcon, Trash2Icon } from './IconComponents';
+import AddressEditor from './AddressEditor';
 
-const UserProfile: React.FC = () => {
+
+interface UserProfileProps {
+    user: User;
+    addresses: Address[];
+    onDataRefresh: () => void;
+}
+
+const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses, onDataRefresh }) => {
     const { user, refreshAuth } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<User>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // Address Management State
+    const [isAddingAddress, setIsAddingAddress] = useState(false);
+    const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
     useEffect(() => {
         if (user) {
@@ -57,11 +69,29 @@ const UserProfile: React.FC = () => {
         }
     };
 
+    const handleSaveAddress = () => {
+        onDataRefresh();
+        setIsAddingAddress(false);
+        setEditingAddress(null);
+    };
+
+    const handleCancelAddress = () => {
+        setIsAddingAddress(false);
+        setEditingAddress(null);
+    };
+
+    const handleDeleteAddress = (id: number) => {
+        if (window.confirm("Are you sure you want to delete this address?")) {
+            db.deleteAddress(id);
+            onDataRefresh();
+        }
+    };
+
     const inputClasses = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400";
     const readOnlyClasses = "mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300";
 
     return (
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto space-y-8">
             <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8">
                 <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
                     <div className="flex-shrink-0">
@@ -115,6 +145,64 @@ const UserProfile: React.FC = () => {
                             )}
                         </form>
                     </div>
+                </div>
+            </div>
+
+             {/* Address Management Section */}
+            <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">My Addresses</h2>
+                     {!isAddingAddress && !editingAddress && (
+                        <button onClick={() => { setIsAddingAddress(true); setEditingAddress(null); }} className="flex items-center px-4 py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition-colors">
+                            <PlusCircleIcon className="w-5 h-5 mr-2" /> Add New Address
+                        </button>
+                    )}
+                </div>
+
+                <div className="space-y-4">
+                    {addresses.map(address => (
+                        <div key={address.id} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border dark:border-gray-600">
+                             {editingAddress?.id === address.id ? (
+                                <AddressEditor
+                                    user={user}
+                                    address={address}
+                                    onSave={handleSaveAddress}
+                                    onCancel={handleCancelAddress}
+                                />
+                            ) : (
+                                <div className="flex justify-between items-start">
+                                    <div className="text-sm">
+                                        <p className="font-semibold text-gray-800 dark:text-gray-100 flex items-center">
+                                            <span className={`px-2 py-0.5 rounded-full text-xs mr-2 ${address.type === 'Home' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300'}`}>{address.type}</span>
+                                            {address.fullName}
+                                        </p>
+                                        <p className="text-gray-600 dark:text-gray-300 mt-1">{address.addressLine1}, {address.addressLine2}, {address.city} - {address.pincode}</p>
+                                        <p className="text-gray-600 dark:text-gray-300">Phone: {address.phone}</p>
+                                    </div>
+                                    <div className="flex space-x-2 flex-shrink-0 ml-4">
+                                        <button onClick={() => setEditingAddress(address)} className="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full" aria-label="Edit address">
+                                            <EditIcon className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => handleDeleteAddress(address.id)} className="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full" aria-label="Delete address">
+                                            <Trash2Icon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+
+                    {isAddingAddress && (
+                        <AddressEditor
+                            user={user}
+                            onSave={handleSaveAddress}
+                            onCancel={handleCancelAddress}
+                        />
+                    )}
+
+                    {addresses.length === 0 && !isAddingAddress && (
+                        <p className="text-center text-gray-500 dark:text-gray-400 py-4">You have no saved addresses.</p>
+                    )}
                 </div>
             </div>
         </div>

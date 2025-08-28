@@ -234,8 +234,8 @@ const App: React.FC = () => {
     if (videoCallDoctor) {
         return <VideoCallView doctor={videoCallDoctor} onEndCall={handleEndVideoCall} />;
     }
-    if (currentView === 'profile') {
-        return <UserProfile />;
+    if (currentView === 'profile' && user) {
+        return <UserProfile user={user} addresses={addresses} onDataRefresh={refreshData} />;
     }
     if (currentView === 'orderHistory' && user) {
         return <OrderHistoryView medicineOrders={medicineOrders} labTestBookings={labTestBookings} />;
