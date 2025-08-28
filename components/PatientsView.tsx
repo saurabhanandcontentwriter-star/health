@@ -1,7 +1,7 @@
-
 import React, { useState, useMemo } from 'react';
 import { User, Appointment, MedicineOrder } from '../types';
 import { SearchIcon, StethoscopeIcon, RupeeIcon, ShoppingBagIcon, FileTextIcon } from './IconComponents';
+import { CONSULTATION_FEE } from '../utils/constants';
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
@@ -37,12 +37,13 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, appoin
                                     {appointments.map(appt => (
                                         <li key={appt.id} className="py-3">
                                             <p className="font-semibold text-gray-800 dark:text-gray-100">Dr. {appt.doctor_name}</p>
-                                            <p className="text-sm text-gray-600 dark:text-gray-300">Time: {appt.appointment_time} on {new Date(appt.created_at).toLocaleDateString()}</p>
-                                            {appt.symptoms && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Symptoms: <span className="italic">"{appt.symptoms}"</span></p>}
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">{new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString()} at {appt.appointment_time}</p>
                                         </li>
                                     ))}
                                 </ul>
-                            ) : <p className="text-gray-500 dark:text-gray-400 text-center py-4">No appointment history.</p>}
+                            ) : (
+                                <p className="text-center text-gray-500 dark:text-gray-400 py-4">No appointments found.</p>
+                            )}
                         </div>
                     </div>
 
@@ -55,16 +56,18 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, appoin
                                     {medicineOrders.map(order => (
                                         <li key={order.id} className="py-3">
                                             <div className="flex justify-between items-center">
-                                                <p className="font-semibold text-gray-800 dark:text-gray-100">Order #{order.id} <span className="font-normal text-gray-600 dark:text-gray-400 text-sm ml-2">({new Date(order.orderDate).toLocaleDateString()})</span></p>
-                                                <p className="font-bold text-teal-600 dark:text-teal-400">{formatCurrency(order.totalAmount)}</p>
+                                                <div>
+                                                    <p className="font-semibold text-gray-800 dark:text-gray-100">Order #{order.id}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{new Date(order.orderDate).toLocaleDateString()}</p>
+                                                </div>
+                                                <p className="font-semibold text-gray-800 dark:text-gray-100">{formatCurrency(order.totalAmount)}</p>
                                             </div>
-                                            <ul className="list-disc list-inside text-sm text-gray-600 dark:text-gray-300 mt-2 pl-2">
-                                                {order.items.map(item => <li key={item.medicineId}>{item.quantity} x {item.medicineName}</li>)}
-                                            </ul>
                                         </li>
                                     ))}
                                 </ul>
-                            ) : <p className="text-gray-500 dark:text-gray-400 text-center py-4">No medicine order history.</p>}
+                            ) : (
+                                <p className="text-center text-gray-500 dark:text-gray-400 py-4">No medicine orders found.</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -74,114 +77,104 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, appoin
 };
 
 
-const PatientsView: React.FC<{ users: User[], appointments: Appointment[], medicineOrders: MedicineOrder[] }> = ({ users, appointments, medicineOrders }) => {
+interface PatientsViewProps {
+    users: User[];
+    appointments: Appointment[];
+    medicineOrders: MedicineOrder[];
+}
+
+const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medicineOrders }) => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedPatient, setSelectedPatient] = useState<User | null>(null);
+    const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
 
-    const getPatientStats = useMemo(() => {
-        const statsMap = new Map<number, { appointmentCount: number; orderCount: number; totalRevenue: number; }>();
+    const patientData = useMemo(() => {
+        const patients = users.filter(u => u.role === 'patient');
 
-        // Pre-calculate stats for all patients
-        users.forEach(user => {
-            if (user.role === 'patient') {
-                const appointmentsForPatient = appointments.filter(a => a.userId === user.id);
-                const ordersForPatient = medicineOrders.filter(o => o.userId === user.id);
+        return patients.map(patient => {
+            const patientAppointments = appointments.filter(a => a.userId === patient.id);
+            const patientOrders = medicineOrders.filter(o => o.userId === patient.id);
 
-                const appointmentRevenue = appointmentsForPatient.length * 500; // Assuming 500 per appointment
-                const orderRevenue = ordersForPatient.reduce((sum, order) => sum + order.totalAmount, 0);
-                const totalRevenue = appointmentRevenue + orderRevenue;
-                
-                statsMap.set(user.id, {
-                    appointmentCount: appointmentsForPatient.length,
-                    orderCount: ordersForPatient.length,
-                    totalRevenue
-                });
-            }
-        });
-        return (patientId: number) => statsMap.get(patientId) || { appointmentCount: 0, orderCount: 0, totalRevenue: 0 };
+            const appointmentIncome = patientAppointments.length * CONSULTATION_FEE;
+            // CORRECTED: Use subtotal for consistent, pre-tax revenue calculation
+            const medicineIncome = patientOrders.reduce((sum, order) => sum + order.subtotal, 0);
+            const totalIncome = appointmentIncome + medicineIncome;
+
+            return {
+                ...patient,
+                appointmentCount: patientAppointments.length,
+                orderCount: patientOrders.length,
+                totalIncome,
+                appointments: patientAppointments,
+                medicineOrders: patientOrders
+            };
+        }).sort((a, b) => b.totalIncome - a.totalIncome);
+
     }, [users, appointments, medicineOrders]);
-
+    
+    const selectedPatientDetails = useMemo(() => {
+        if (!selectedPatientId) return null;
+        return patientData.find(p => p.id === selectedPatientId);
+    }, [selectedPatientId, patientData]);
 
     const filteredPatients = useMemo(() => {
-        return users
-            .filter(u => u.role === 'patient')
-            .filter(p =>
-                p.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                p.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                p.phone.includes(searchTerm)
-            ).sort((a,b) => a.firstName.localeCompare(b.firstName));
-    }, [users, searchTerm]);
-
-    const handleCloseModal = () => setSelectedPatient(null);
+        return patientData.filter(p =>
+            `${p.firstName} ${p.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.phone.includes(searchTerm)
+        );
+    }, [patientData, searchTerm]);
 
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Patient Management</h3>
-            <div className="relative mb-4">
-                <input
-                    type="text"
-                    placeholder="Search patients by name or phone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
-                />
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Patient Management</h3>
+                <div className="relative w-full md:w-1/3">
+                    <input
+                        type="text"
+                        placeholder="Search by name or phone..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                </div>
             </div>
-
             <div className="overflow-x-auto max-h-[60vh]">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                         <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient Details</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Activity Summary</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient Name</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Contact</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Income</th>
-                            <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Details</th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {filteredPatients.length > 0 ? filteredPatients.map(patient => {
-                            const stats = getPatientStats(patient.id);
-                            return (
-                                <tr key={patient.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="font-medium text-gray-900 dark:text-gray-100">{patient.firstName} {patient.lastName}</div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-400">{patient.phone}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-300">
-                                        <div className="flex items-center"><StethoscopeIcon className="w-4 h-4 mr-2 text-blue-500"/>{stats.appointmentCount} Appointments</div>
-                                        <div className="flex items-center mt-1"><ShoppingBagIcon className="w-4 h-4 mr-2 text-green-500"/>{stats.orderCount} Medicine Orders</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-teal-700 dark:text-teal-500">
-                                        {formatCurrency(stats.totalRevenue)}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => setSelectedPatient(patient)} className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-700 bg-white rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">
-                                            <FileTextIcon className="w-4 h-4 mr-2"/> View Details
-                                        </button>
-                                    </td>
-                                </tr>
-                            );
-                        }) : (
-                            <tr>
-                                <td colSpan={4} className="text-center py-10 text-gray-500 dark:text-gray-400">
-                                    No patients found matching your search.
+                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {filteredPatients.map((patient) => (
+                             <tr key={patient.id} className="dark:hover:bg-gray-700/50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{patient.firstName} {patient.lastName}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{patient.phone}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-100">{formatCurrency(patient.totalIncome)}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    <button onClick={() => setSelectedPatientId(patient.id)} className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 font-semibold">
+                                        View History
+                                    </button>
                                 </td>
                             </tr>
-                        )}
+                        ))}
                     </tbody>
                 </table>
             </div>
 
-            {selectedPatient && (
-                <PatientDetailModal
-                    patient={selectedPatient}
-                    appointments={appointments.filter(a => a.userId === selectedPatient.id)}
-                    medicineOrders={medicineOrders.filter(o => o.userId === selectedPatient.id)}
-                    onClose={handleCloseModal}
+            {selectedPatientDetails && (
+                <PatientDetailModal 
+                    patient={selectedPatientDetails}
+                    appointments={selectedPatientDetails.appointments}
+                    medicineOrders={selectedPatientDetails.medicineOrders}
+                    onClose={() => setSelectedPatientId(null)}
                 />
             )}
         </div>
     );
-}
+};
 
 export default PatientsView;
