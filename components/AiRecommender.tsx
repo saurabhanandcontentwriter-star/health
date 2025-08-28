@@ -33,19 +33,19 @@ const AiRecommender: React.FC<AiRecommenderProps> = ({ onRecommendation }) => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-teal-50 to-cyan-50 p-6 rounded-xl border border-teal-200">
+    <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-gray-800 dark:to-gray-800/50 p-6 rounded-xl border border-teal-200 dark:border-gray-700">
       <div className="flex items-center">
         <SparklesIcon className="h-6 w-6 text-teal-500" />
-        <h3 className="ml-2 text-lg font-semibold text-gray-800">Don't know which doctor to see?</h3>
+        <h3 className="ml-2 text-lg font-semibold text-gray-800 dark:text-gray-100">Don't know which doctor to see?</h3>
       </div>
-      <p className="text-gray-600 mt-1 mb-4 text-sm">Describe your symptoms and our AI will suggest a specialty.</p>
+      <p className="text-gray-600 dark:text-gray-400 mt-1 mb-4 text-sm">Describe your symptoms and our AI will suggest a specialty.</p>
       
       <div className="space-y-3">
         <textarea
           value={symptoms}
           onChange={(e) => setSymptoms(e.target.value)}
           placeholder="e.g., 'I have a persistent cough and a slight fever for three days.'"
-          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition"
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
           rows={3}
           disabled={isLoading}
         />
@@ -69,11 +69,11 @@ const AiRecommender: React.FC<AiRecommenderProps> = ({ onRecommendation }) => {
       {error && <p className="text-red-600 mt-3 text-sm">{error}</p>}
       
       {recommendation && (
-        <div className="mt-4 p-4 bg-teal-100 border border-teal-200 rounded-md">
-          <p className="font-semibold text-teal-800">
+        <div className="mt-4 p-4 bg-teal-100 border border-teal-200 rounded-md dark:bg-teal-900/50 dark:border-teal-800">
+          <p className="font-semibold text-teal-800 dark:text-teal-200">
             Recommended Specialty: <span className="font-bold">{recommendation.specialty}</span>
           </p>
-          <p className="text-teal-700 text-sm mt-1">{recommendation.reasoning}</p>
+          <p className="text-teal-700 dark:text-teal-300 text-sm mt-1">{recommendation.reasoning}</p>
         </div>
       )}
     </div>

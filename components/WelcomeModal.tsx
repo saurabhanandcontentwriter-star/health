@@ -17,12 +17,12 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose, userName }) => {
       aria-labelledby="welcome-title"
     >
       <div 
-        className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center animate-fade-in-up" 
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 w-full max-w-md transform transition-all text-center animate-fade-in-up" 
         onClick={(e) => e.stopPropagation()}
       >
         <Logo className="h-24 mx-auto mb-4" />
-        <h2 id="welcome-title" className="text-3xl font-bold text-gray-800 mb-2">Welcome, {userName}!</h2>
-        <p className="text-gray-600 mb-8">
+        <h2 id="welcome-title" className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">Welcome, {userName}!</h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-8">
           We're glad to have you at Bihar Health Connect. Find doctors, book lab tests, and order medicines with ease.
         </p>
         <button

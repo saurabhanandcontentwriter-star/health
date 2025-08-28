@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DoctorCard from './components/DoctorCard';
@@ -15,6 +16,8 @@ import Chatbot from './components/Chatbot';
 import VideoCallView from './components/VideoCallView';
 import ReminderToast from './components/ReminderToast';
 import AppointmentHistoryView from './components/AppointmentHistoryView';
+import UserProfile from './components/UserProfile';
+import OrderHistoryView from './components/OrderHistoryView';
 import { useAuth } from './contexts/AuthContext';
 import * as db from './services/dbService';
 import { User, Doctor, Appointment, AppointmentIn, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, LabTest, LabTestBooking, LabTestBookingIn, Message } from './types';
@@ -24,7 +27,7 @@ import LabTestBookingModal from './components/LabTestBookingModal';
 const App: React.FC = () => {
   const [permissionsGranted, setPermissionsGranted] = useState(localStorage.getItem('permissions-granted') === 'true');
   const { isAuthenticated, user, authLogs } = useAuth();
-  const [currentView, setCurrentView] = useState<'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests' | 'appointmentHistory'>('search');
+  const [currentView, setCurrentView] = useState<'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests' | 'appointmentHistory' | 'profile' | 'orderHistory'>('search');
   
   const [users, setUsers] = useState<User[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -89,9 +92,9 @@ const App: React.FC = () => {
       refreshData();
       
       const validViewsForRole: Record<User['role'], string[]> = {
-          patient: ['search', 'pharmacy', 'labTests', 'appointmentHistory'],
-          admin: ['search', 'dashboard', 'pharmacy', 'labTests', 'appointmentHistory'],
-          owner: ['search', 'ownerDashboard', 'pharmacy', 'labTests', 'appointmentHistory']
+          patient: ['search', 'pharmacy', 'labTests', 'appointmentHistory', 'profile', 'orderHistory'],
+          admin: ['search', 'dashboard', 'pharmacy', 'labTests', 'appointmentHistory', 'profile', 'orderHistory'],
+          owner: ['search', 'ownerDashboard', 'pharmacy', 'labTests', 'appointmentHistory', 'profile', 'orderHistory']
       };
       
       const defaultViewForRole: Record<User['role'], 'search' | 'dashboard' | 'ownerDashboard'> = {
@@ -233,6 +236,12 @@ const App: React.FC = () => {
     if (videoCallDoctor) {
         return <VideoCallView doctor={videoCallDoctor} onEndCall={handleEndVideoCall} />;
     }
+    if (currentView === 'profile') {
+        return <UserProfile />;
+    }
+    if (currentView === 'orderHistory' && user) {
+        return <OrderHistoryView medicineOrders={medicineOrders} labTestBookings={labTestBookings} />;
+    }
     if (currentView === 'appointmentHistory') {
         return <AppointmentHistoryView appointments={userAppointments} />;
     }
@@ -278,23 +287,23 @@ const App: React.FC = () => {
     return (
       <div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-lg">
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Find Your Doctor</h2>
+            <div className="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Find Your Doctor</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                        <label htmlFor="location" className="block text-sm font-medium text-gray-700">Location</label>
-                        <input type="text" id="location" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g., Patna" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" />
+                        <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+                        <input type="text" id="location" value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g., Patna" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
                     </div>
                     <div>
-                        <label htmlFor="specialty" className="block text-sm font-medium text-gray-700">Specialty</label>
-                        <input type="text" id="specialty" value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="e.g., Dentist" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500" />
+                        <label htmlFor="specialty" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Specialty</label>
+                        <input type="text" id="specialty" value={specialty} onChange={e => setSpecialty(e.target.value)} placeholder="e.g., Dentist" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400" />
                     </div>
                 </div>
                 <div className="flex items-center space-x-4">
                     <button onClick={handleSearch} className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
                        <SearchIcon className="w-5 h-5 mr-2" /> Search
                     </button>
-                     <button onClick={clearFilters} className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                     <button onClick={clearFilters} className="flex-1 inline-flex items-center justify-center px-4 py-2.5 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-600">
                         Clear Filters
                     </button>
                 </div>
@@ -307,14 +316,19 @@ const App: React.FC = () => {
         {filteredDoctors.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredDoctors.map(doctor => (
-              <DoctorCard key={doctor.id} doctor={doctor} onBook={handleSelectSlot} />
+              <DoctorCard 
+                key={doctor.id} 
+                doctor={doctor} 
+                onBook={handleSelectSlot}
+                onVideoCall={handleStartVideoCall} 
+              />
             ))}
           </div>
         ) : (
-            <div className="text-center py-16 px-4 bg-white rounded-xl shadow-lg">
+            <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
                 <StethoscopeIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-lg font-medium text-gray-900">No Doctors Found</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">No Doctors Found</h3>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     Try adjusting your search filters or use the AI recommender to find a specialty.
                 </p>
             </div>
@@ -332,7 +346,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header currentView={currentView} setCurrentView={setCurrentView} />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

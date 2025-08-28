@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { LabTest, LabTestBooking, User, Address, LabTestBookingIn } from '../types';
 import LabTestCard from './LabTestCard';
 import LabTestBookingModal from './LabTestBookingModal';
-import { TestTubeIcon, ArchiveIcon, CheckCircleIcon, XCircleIcon } from './IconComponents';
+import { TestTubeIcon, ArchiveIcon, XCircleIcon } from './IconComponents';
 import * as db from '../services/dbService';
+import { LabTestBookingTracker } from './OrderTrackers';
 
 
 interface LabTestsViewProps {
@@ -14,31 +15,6 @@ interface LabTestsViewProps {
   onBookTest: (data: LabTestBookingIn) => { message: string };
   onDataRefresh: () => void;
 }
-
-const BookingStatusTracker: React.FC<{ status: LabTestBooking['status'] }> = ({ status }) => {
-    const statuses: LabTestBooking['status'][] = ['Booked', 'Sample Collected', 'Report Ready'];
-    const currentStatusIndex = statuses.indexOf(status);
-
-    return (
-        <div className="w-full my-4">
-            <div className="flex justify-between">
-                {statuses.map((s, index) => (
-                    <div key={s} className="flex-1 text-center">
-                        <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center border-2 ${index <= currentStatusIndex ? 'bg-teal-600 border-teal-600 text-white' : 'bg-gray-100 border-gray-300 text-gray-400'}`}>
-                           <CheckCircleIcon className="h-4 w-4" />
-                        </div>
-                        <p className={`text-xs mt-1 ${index <= currentStatusIndex ? 'font-semibold text-teal-700' : 'text-gray-500'}`}>{s}</p>
-                    </div>
-                ))}
-            </div>
-            <div className="flex items-center mt-[-20px] px-8 sm:px-16">
-                 <div className={`flex-1 h-1 rounded ${currentStatusIndex > 0 ? 'bg-teal-600' : 'bg-gray-300'}`}></div>
-                 <div className={`flex-1 h-1 rounded ${currentStatusIndex > 1 ? 'bg-teal-600' : 'bg-gray-300'}`}></div>
-            </div>
-        </div>
-    );
-};
-
 
 const LabTestsView: React.FC<LabTestsViewProps> = ({ tests, bookings, user, addresses, onBookTest, onDataRefresh }) => {
     const [activeTab, setActiveTab] = useState<'browse' | 'bookings'>('browse');
@@ -147,7 +123,7 @@ const LabTestsView: React.FC<LabTestsViewProps> = ({ tests, bookings, user, addr
                                 ) : (
                                     <div>
                                         <h4 className="font-semibold text-gray-700">Booking Status</h4>
-                                        <BookingStatusTracker status={booking.status} />
+                                        <LabTestBookingTracker status={booking.status} />
                                     </div>
                                 )}
 

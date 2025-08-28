@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { User, Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, LabTestBooking } from '../types';
 import { UsersIcon, StethoscopeIcon, RupeeIcon, ActivityIcon, HourglassIcon } from './IconComponents';
@@ -9,16 +10,17 @@ interface StatCardProps {
   value: string | number;
   icon: React.ReactNode;
   color: string;
+  darkColor: string;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color }) => (
-  <div className="bg-white p-6 rounded-xl shadow-lg flex items-center space-x-4">
-    <div className={`p-3 rounded-full ${color}`}>
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, darkColor }) => (
+  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg flex items-center space-x-4">
+    <div className={`p-3 rounded-full ${color} ${darkColor}`}>
       {icon}
     </div>
     <div>
-      <p className="text-sm text-gray-500">{title}</p>
-      <p className="text-2xl font-bold text-gray-800">{value}</p>
+      <p className="text-sm text-gray-500 dark:text-gray-400">{title}</p>
+      <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{value}</p>
     </div>
   </div>
 );
@@ -72,24 +74,28 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
                             value={users.length} 
                             icon={<UsersIcon className="h-6 w-6 text-teal-800" />}
                             color="bg-teal-100"
+                            darkColor="dark:bg-teal-900/50"
                         />
                         <StatCard 
                             title="Registered Doctors" 
                             value={doctors.length} 
                             icon={<StethoscopeIcon className="h-6 w-6 text-indigo-800" />}
                             color="bg-indigo-100"
+                            darkColor="dark:bg-indigo-900/50"
                         />
                          <StatCard 
                             title="Total Appointments" 
                             value={appointments.length} 
                             icon={<ActivityIcon className="h-6 w-6 text-blue-800" />}
                             color="bg-blue-100"
+                            darkColor="dark:bg-blue-900/50"
                         />
                         <StatCard 
                             title="Total Revenue" 
                             value={`₹ ${totalRevenue.toLocaleString('en-IN')}`} 
                             icon={<RupeeIcon className="h-6 w-6 text-green-800" />}
                             color="bg-green-100"
+                            darkColor="dark:bg-green-900/50"
                         />
                     </div>
                 );
@@ -103,24 +109,24 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
                 );
             case 'doctors':
                  return (
-                    <div className="bg-white p-6 rounded-xl shadow-lg">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                         <div className="overflow-x-auto max-h-[60vh]">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50 sticky top-0">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specialty</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Availability</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Specialty</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Location</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Availability</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     {doctors.map((doctor) => (
-                                        <tr key={doctor.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{doctor.name}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doctor.specialty}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doctor.location}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doctor.available_time}</td>
+                                        <tr key={doctor.id} className="dark:hover:bg-gray-700/50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{doctor.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{doctor.specialty}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{doctor.location}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{doctor.available_time}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -136,26 +142,26 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
                      return dateB - dateA;
                 });
                 return (
-                    <div className="bg-white p-6 rounded-xl shadow-lg">
+                    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                         <div className="overflow-x-auto max-h-[60vh]">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50 sticky top-0">
+                            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                                     <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Doctor</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Appointment Date</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booked On</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Doctor</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Appointment Date</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Time</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Booked On</th>
                                     </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                     {sortedAppointments.map((appt) => (
-                                        <tr key={appt.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{appt.patient_name}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{appt.doctor_name}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString()}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{appt.appointment_time}</td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(appt.created_at).toLocaleDateString()}</td>
+                                        <tr key={appt.id} className="dark:hover:bg-gray-700/50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{appt.patient_name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{appt.doctor_name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString()}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{appt.appointment_time}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{new Date(appt.created_at).toLocaleDateString()}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -166,52 +172,52 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
             case 'logs':
                 return (
                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <div className="bg-white p-6 rounded-xl shadow-lg">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                             <div className="flex items-center mb-4">
-                                <ActivityIcon className="h-6 w-6 text-teal-600" />
-                                <h3 className="ml-3 text-xl font-bold text-gray-800">User Activity Log</h3>
+                                <ActivityIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                                <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">User Activity Log</h3>
                             </div>
                             <div className="overflow-x-auto max-h-96">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50 sticky top-0">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                                         <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Action</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Timestamp</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                         {authLogs.map((log, index) => (
-                                            <tr key={`auth-${index}`}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{log.userName}</td>
+                                            <tr key={`auth-${index}`} className="dark:hover:bg-gray-700/50">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{log.userName}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${log.action === 'login' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{log.action}</span></td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(log.timestamp).toLocaleString()}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{new Date(log.timestamp).toLocaleString()}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-                        <div className="bg-white p-6 rounded-xl shadow-lg">
+                        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                              <div className="flex items-center mb-4">
-                                <HourglassIcon className="h-6 w-6 text-teal-600" />
-                                <h3 className="ml-3 text-xl font-bold text-gray-800">User Session Tracking</h3>
+                                <HourglassIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                                <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">User Session Tracking</h3>
                             </div>
                              <div className="overflow-x-auto max-h-96">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50 sticky top-0">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                                         <tr>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Time</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Duration</th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">End Time</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                         {sessions.map((session) => (
-                                            <tr key={`session-${session.id}`}>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{session.userName}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDuration(session.duration)}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(session.endTime).toLocaleString()}</td>
+                                            <tr key={`session-${session.id}`} className="dark:hover:bg-gray-700/50">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{session.userName}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{formatDuration(session.duration)}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{new Date(session.endTime).toLocaleString()}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -229,7 +235,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
              <button
                 onClick={() => setActiveTab(tabName)}
                 className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    isActive ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-teal-100'
+                    isActive ? 'bg-teal-600 text-white' : 'text-gray-600 hover:bg-teal-100 dark:text-gray-300 dark:hover:bg-gray-700'
                 }`}
             >
                 {label}
@@ -239,8 +245,8 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
 
     return (
         <div className="space-y-8">
-            <h1 className="text-3xl font-bold text-gray-800">Owner Super Admin Panel</h1>
-            <div className="bg-white p-2 rounded-lg shadow-md">
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Owner Super Admin Panel</h1>
+            <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md">
                 <nav className="flex items-center space-x-2">
                    <TabButton tabName="overview" label="Overview" />
                    <TabButton tabName="users" label="Patient Management" />

@@ -111,7 +111,7 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onEndCall, doctor }) => {
       localStream.getAudioTracks().forEach(track => {
         track.enabled = !track.enabled;
       });
-      setIsMicMuted(!isMicMuted);
+      setIsMicMuted(prev => !prev);
     }
   };
 
@@ -120,7 +120,7 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onEndCall, doctor }) => {
       localStream.getVideoTracks().forEach(track => {
         track.enabled = !track.enabled;
       });
-      setIsCameraOff(!isCameraOff);
+      setIsCameraOff(prev => !prev);
     }
   };
 

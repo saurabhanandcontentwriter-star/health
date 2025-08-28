@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   authLogs: AuthLog[];
+  refreshAuth: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,6 +29,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const refreshAuthLogs = useCallback(() => {
     setAuthLogs(db.getAuthLogs());
   }, []);
+
+  const refreshAuth = useCallback(() => {
+    try {
+      const storedUserJson = localStorage.getItem('bhc-user');
+      if (storedUserJson) {
+        const storedUser = JSON.parse(storedUserJson);
+        if(storedUser && storedUser.phone) {
+            const freshUser = db.getUserByPhone(storedUser.phone);
+            if(freshUser) setUser(freshUser);
+        }
+      }
+      refreshAuthLogs();
+    } catch (error) {
+      console.error('Failed to restore session from localStorage:', error);
+      setUser(null);
+      localStorage.removeItem('bhc-user');
+    }
+  }, [refreshAuthLogs]);
 
   const endSession = useCallback(() => {
     const startTime = sessionStartTimeRef.current;
@@ -76,23 +95,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     setLoading(true);
-    try {
-      const storedUserJson = localStorage.getItem('bhc-user');
-      if (storedUserJson) {
-        const storedUser = JSON.parse(storedUserJson);
-        if(storedUser && storedUser.phone) {
-            const freshUser = db.getUserByPhone(storedUser.phone);
-            if(freshUser) setUser(freshUser);
-        }
-      }
-      refreshAuthLogs();
-    } catch (error) {
-      console.error('Failed to restore session from localStorage:', error);
-      localStorage.removeItem('bhc-user');
-    } finally {
-      setLoading(false);
-    }
-  }, [refreshAuthLogs]);
+    refreshAuth();
+    setLoading(false);
+  }, [refreshAuth]);
 
   const login = async (phone: string) => {
     const userToLogin = db.getUserByPhone(phone);
@@ -124,7 +129,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout, isAuthenticated: !!user, loading, authLogs }}>
+    <AuthContext.Provider value={{ user, login, signup, logout, isAuthenticated: !!user, loading, authLogs, refreshAuth }}>
       {!loading && children}
     </AuthContext.Provider>
   );

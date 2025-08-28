@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ClockIcon, MapPinIcon, ThermometerIcon } from './IconComponents';
@@ -97,7 +98,7 @@ const WeatherWidget: React.FC = () => {
     };
 
     return (
-        <div className="bg-teal-900 text-white text-sm z-20 shadow-inner">
+        <div className="bg-teal-900 text-white dark:bg-gray-900 dark:text-gray-200 text-sm z-20 shadow-inner">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-10">
                 <div className="flex items-center space-x-2">
                     {user && <span className="font-semibold hidden sm:inline">{getGreeting()}, {user.firstName}</span>}
@@ -107,7 +108,7 @@ const WeatherWidget: React.FC = () => {
                     {temperature !== null && (
                         <div className="flex items-center space-x-2">
                             <ThermometerIcon className="w-5 h-5" />
-                            <span className="font-semibold bg-blue-600 px-2 py-0.5 rounded-md">{temperature}°C</span>
+                            <span className="font-semibold bg-blue-600 dark:bg-blue-800 px-2 py-0.5 rounded-md">{temperature}°C</span>
                         </div>
                     )}
                     <div className="flex items-center space-x-2">
