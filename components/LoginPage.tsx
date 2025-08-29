@@ -1,9 +1,8 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import * as db from '../services/dbService';
 import Logo from './Logo';
-import { RefreshCwIcon } from './IconComponents';
+import { RefreshCwIcon, XCircleIcon } from './IconComponents';
 
 
 const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
@@ -33,6 +32,7 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
 
     const handleGetOtp = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         if (!/^\d{10}$/.test(phone)) {
             setError('Please enter a valid 10-digit phone number.');
             return;
@@ -45,7 +45,6 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
         }
 
         setIsLoading(true);
-        setError('');
         
         const user = db.getUserByPhone(phone);
 
@@ -69,12 +68,12 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         if (otp !== generatedOtp) {
             setError('Invalid OTP. Please try again.');
             return;
         }
         setIsLoading(true);
-        setError('');
         try {
             await login(phone);
         } catch (err: any) {
@@ -110,7 +109,12 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
                     </div>
                 </div>
 
-                {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                )}
 
                 <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-teal-400 disabled:cursor-not-allowed">
                     {isLoading ? 'Sending OTP...' : 'Get OTP'}
@@ -134,7 +138,12 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
                 <input type="text" id="otp" value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter the 6-digit OTP" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" required />
             </div>
 
-            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+            {error && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                    <span>{error}</span>
+                </div>
+            )}
 
             <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-teal-400 disabled:cursor-not-allowed">
                 {isLoading ? 'Verifying...' : 'Verify & Sign In'}
@@ -177,6 +186,7 @@ const SignupForm: React.FC = () => {
 
     const handleGetOtp = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         if (!firstName || !lastName || !/^\d{10}$/.test(phone)) {
             setError('Please fill all required fields and enter a valid 10-digit phone number.');
             return;
@@ -192,7 +202,6 @@ const SignupForm: React.FC = () => {
         }
 
         setIsLoading(true);
-        setError('');
 
         if (db.checkUserExists(phone)) {
             setError('A user with this phone number already exists. Please sign in.');
@@ -208,12 +217,12 @@ const SignupForm: React.FC = () => {
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
         if (otp !== generatedOtp) {
             setError('Invalid OTP. Please try again.');
             return;
         }
         setIsLoading(true);
-        setError('');
         try {
             await signup(firstName, lastName, phone, email);
         } catch (err: any) {
@@ -263,7 +272,12 @@ const SignupForm: React.FC = () => {
                     </div>
                 </div>
 
-                {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                )}
 
                 <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-teal-400 disabled:cursor-not-allowed">
                     {isLoading ? 'Sending OTP...' : 'Get OTP'}
@@ -283,7 +297,12 @@ const SignupForm: React.FC = () => {
                 <input type="text" id="otp-signup" value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter the 6-digit OTP" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" required />
             </div>
 
-            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+            {error && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                    <span>{error}</span>
+                </div>
+            )}
 
             <button type="submit" disabled={isLoading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:bg-teal-400 disabled:cursor-not-allowed">
                 {isLoading ? 'Creating Account...' : 'Verify & Create Account'}

@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { recommendDoctorSpecialty } from '../services/geminiService';
-import { SparklesIcon } from './IconComponents';
+import { SparklesIcon, XCircleIcon } from './IconComponents';
 
 interface AiRecommenderProps {
   onRecommendation: (specialty: string) => void;
@@ -15,7 +14,7 @@ const AiRecommender: React.FC<AiRecommenderProps> = ({ onRecommendation }) => {
 
   const handleRecommendation = async () => {
     if (!symptoms.trim()) {
-      setError('Please enter your symptoms.');
+      setError('Please enter your symptoms to get a recommendation.');
       return;
     }
     setIsLoading(true);
@@ -66,7 +65,12 @@ const AiRecommender: React.FC<AiRecommenderProps> = ({ onRecommendation }) => {
         </button>
       </div>
 
-      {error && <p className="text-red-600 mt-3 text-sm">{error}</p>}
+      {error && (
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+              <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+              <span>{error}</span>
+          </div>
+      )}
       
       {recommendation && (
         <div className="mt-4 p-4 bg-teal-100 border border-teal-200 rounded-md dark:bg-teal-900/50 dark:border-teal-800">

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy } from '../types';
 import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, RefreshCwIcon, PlusCircleIcon, TestTubeIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon } from './IconComponents';
@@ -184,6 +183,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
     if (!transferAmount || Number(transferAmount) <= 0) {
         setTransferError('Please enter a valid transfer amount.'); return;
     }
+    if (accountNumber.length < 9 || accountNumber.length > 18) {
+        setTransferError('Please enter a valid account number.'); return;
+    }
     if (accountNumber !== confirmAccountNumber) {
         setTransferError('Account numbers do not match.'); return;
     }
@@ -264,7 +266,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
                     {isGenerating ? 'Generating...' : 'Generate'}
                 </button>
             </div>
-            {qrError && <p className="text-red-500 text-sm mt-2">{qrError}</p>}
+            {qrError && (
+                 <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                    <span>{qrError}</span>
+                </div>
+            )}
             {qrCodeUrl && <img src={qrCodeUrl} alt="Generated QR Code" className="mx-auto mt-4 w-48 h-48 bg-white p-2 rounded-md"/>}
         </div>
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
@@ -278,7 +285,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
                      <input type="text" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} placeholder="Account Number" className={inputClasses} required />
                      <input type="text" value={confirmAccountNumber} onChange={e => setConfirmAccountNumber(e.target.value)} placeholder="Confirm Account Number" className={inputClasses} required />
                      <input type="text" value={ifscCode} onChange={e => setIfscCode(e.target.value.toUpperCase())} placeholder="IFSC Code" className={inputClasses} required />
-                     {transferError && <p className="text-red-500 text-sm">{transferError}</p>}
+                     {transferError && (
+                         <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{transferError}</span>
+                        </div>
+                    )}
                      <button type="submit" className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Transfer</button>
                 </form>
             )}
@@ -287,7 +299,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
                     <p className="text-sm dark:text-gray-300">Transferring <span className="font-bold">{formatCurrency(Number(transferAmount))}</span> to A/C ending in <span className="font-mono">{accountNumber.slice(-4)}</span></p>
                     <div className="p-2 bg-yellow-100 text-yellow-800 text-center rounded-md"><p>Simulated OTP: <span className="font-bold">{generatedOtp}</span></p></div>
                     <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter 6-digit OTP" className={inputClasses} required />
-                     {transferError && <p className="text-red-500 text-sm">{transferError}</p>}
+                    {transferError && (
+                         <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{transferError}</span>
+                        </div>
+                    )}
                     <button type="submit" className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Confirm Transfer</button>
                 </form>
             )}

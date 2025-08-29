@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Doctor, DoctorIn } from '../types';
 import * as db from '../services/dbService';
-import { UserPlusIcon } from './IconComponents';
+import { UserPlusIcon, XCircleIcon } from './IconComponents';
 
 interface DoctorFormProps {
     doctorToEdit?: Doctor | null;
@@ -36,6 +35,12 @@ const DoctorForm: React.FC<DoctorFormProps> = ({ doctorToEdit, onSuccess, onClos
         setError('');
         if (!name || !specialty || !location || !availableTime) {
             setError('All fields except Image URL are required.');
+            return;
+        }
+
+        const timeRegex = /^\d{1,2}:\d{2}\s*(AM|PM)\s*-\s*\d{1,2}:\d{2}\s*(AM|PM)$/i;
+        if (!timeRegex.test(availableTime)) {
+            setError('Please enter a valid time format (e.g., 10:00 AM - 1:00 PM).');
             return;
         }
         
@@ -121,7 +126,12 @@ const DoctorForm: React.FC<DoctorFormProps> = ({ doctorToEdit, onSuccess, onClos
                         />
                     </div>
 
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                    {error && (
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                    )}
 
                     <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
                         <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">

@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Medicine, MedicineIn } from '../types';
 import * as db from '../services/dbService';
-import { PillIcon } from './IconComponents';
+import { PillIcon, XCircleIcon } from './IconComponents';
 
 interface MedicineFormProps {
     medicineToEdit?: Medicine | null;
@@ -38,8 +37,17 @@ const MedicineForm: React.FC<MedicineFormProps> = ({ medicineToEdit, onSuccess, 
             setError('All fields except Image URL are required.');
             return;
         }
-        if (isNaN(Number(mrp)) || isNaN(Number(price))) {
+        
+        const mrpNum = Number(mrp);
+        const priceNum = Number(price);
+        
+        if (isNaN(mrpNum) || isNaN(priceNum)) {
             setError('MRP and Price must be valid numbers.');
+            return;
+        }
+
+        if (priceNum > mrpNum) {
+            setError('Selling price cannot be greater than MRP.');
             return;
         }
 
@@ -50,8 +58,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({ medicineToEdit, onSuccess, 
                 const updatedMedicineData: Medicine = {
                     ...medicineToEdit,
                     name,
-                    mrp: Number(mrp),
-                    price: Number(price),
+                    mrp: mrpNum,
+                    price: priceNum,
                     description,
                     imageUrl: imageUrl || `https://placehold.co/300x200?text=${encodeURIComponent(name)}`,
                 };
@@ -59,8 +67,8 @@ const MedicineForm: React.FC<MedicineFormProps> = ({ medicineToEdit, onSuccess, 
             } else {
                 const newMedicineData: MedicineIn = {
                     name,
-                    mrp: Number(mrp),
-                    price: Number(price),
+                    mrp: mrpNum,
+                    price: priceNum,
                     description,
                     imageUrl: imageUrl || `https://placehold.co/300x200?text=${encodeURIComponent(name)}`,
                 };
@@ -122,7 +130,12 @@ const MedicineForm: React.FC<MedicineFormProps> = ({ medicineToEdit, onSuccess, 
                         />
                     </div>
 
-                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                    {error && (
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                    )}
 
                     <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
                         <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">

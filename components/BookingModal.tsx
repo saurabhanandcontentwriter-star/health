@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { Doctor, AppointmentIn } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { FileTextIcon, QrCodeIcon } from './IconComponents';
+import { FileTextIcon, QrCodeIcon, XCircleIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import { CONSULTATION_FEE, GST_RATE } from '../utils/constants';
 
@@ -68,11 +67,18 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
 
   const handleProceedToPayment = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!patientName || !appointmentTime || !appointmentDate) {
       setError('Please fill in all required appointment details.');
       return;
     }
-    setError('');
+
+    const rate = Number(heartBeatRate);
+    if (heartBeatRate && (rate < 30 || rate > 250)) {
+        setError('Please enter a valid heart beat rate (between 30 and 250 BPM).');
+        return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -110,8 +116,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
           report_pdf_file: reportPdf,
         });
         setStep('confirmed');
-    } catch (err) {
-        setError("Failed to book appointment. Please try again.");
+    } catch (err: any) {
+        setError(err.message || "Failed to book appointment. Please try again.");
     } finally {
         setIsLoading(false);
     }
@@ -214,7 +220,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
             </div>
         </div>
         
-        {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
+        {error && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span>{error}</span>
+            </div>
+        )}
 
         <div className="flex justify-end space-x-4 pt-4 border-t border-gray-200 dark:border-gray-700 mt-6">
           <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
@@ -264,7 +275,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">Scan with any UPI app (GPay, PhonePe, Paytm, etc.)</p>
             
-            {error && !qrCodeUrl && <p className="text-red-500 text-sm mt-4">{error}</p>}
+            {error && !qrCodeUrl && (
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                  <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <span>{error}</span>
+              </div>
+            )}
             
             <div className="flex justify-center space-x-4 pt-6 w-full">
                 <button type="button" onClick={() => { setError(''); setStep('details'); }} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
@@ -274,7 +290,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
                 {isLoading ? 'Confirming...' : "I've Paid, Confirm"}
                 </button>
             </div>
-            {error && qrCodeUrl && <p className="text-red-500 text-sm mt-4">{error}</p>}
+             {error && qrCodeUrl && (
+              <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                  <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                  <span>{error}</span>
+              </div>
+            )}
         </div>
     );
   };

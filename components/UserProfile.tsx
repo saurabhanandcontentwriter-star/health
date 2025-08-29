@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Address } from '../types';
 import * as db from '../services/dbService';
-import { PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon, CameraIcon } from './IconComponents';
+import { PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon, CameraIcon, XCircleIcon } from './IconComponents';
 import AddressEditor from './AddressEditor';
 
 
@@ -91,14 +90,20 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+        setSuccess('');
+        setImageError('');
+
         if (!formData.firstName || !formData.lastName) {
             setError('First and last name cannot be empty.');
             return;
         }
+        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            setError('Please enter a valid email address.');
+            return;
+        }
+
         setIsLoading(true);
-        setError('');
-        setSuccess('');
-        setImageError('');
         try {
             const updatedUser: User = {
                 ...user,
@@ -154,6 +159,13 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
     const inputClasses = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400";
     const readOnlyClasses = "mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300";
 
+    const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+            <span>{message}</span>
+        </div>
+    );
+
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8">
@@ -196,8 +208,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
                         </div>
 
                         {success && <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 rounded-md text-sm">{success}</div>}
-                        {error && <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 rounded-md text-sm">{error}</div>}
-                        {imageError && <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 rounded-md text-sm">{imageError}</div>}
+                        {error && <ErrorMessage message={error} />}
+                        {imageError && <ErrorMessage message={imageError} />}
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -321,40 +333,4 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
                         ) : (
                             <>
                                 <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Address Deleted</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 mb-6">
-                                    The address was successfully removed from your profile.
-                                </p>
-                                <div className="flex justify-center space-x-4">
-                                    <button onClick={closeDeleteModal} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
-                                        Close
-                                    </button>
-                                    <button onClick={handleAddAnother} className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">
-                                        Add Another Address
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
-             <style>{`
-            @keyframes fade-in-up {
-              0% {
-                opacity: 0;
-                transform: translateY(20px) scale(0.95);
-              }
-              100% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-              }
-            }
-            .animate-fade-in-up {
-              animation: fade-in-up 0.3s ease-out forwards;
-            }
-          `}</style>
-        </div>
-    );
-};
-
-export default UserProfile;
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-10

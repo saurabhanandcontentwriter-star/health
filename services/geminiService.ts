@@ -49,8 +49,16 @@ export const recommendDoctorSpecialty = async (symptoms: string): Promise<{ spec
     return result;
 
   } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    throw new Error("Failed to get AI recommendation. Please try again.");
+    console.error("Error calling Gemini API for specialty recommendation:", error);
+    let errorMessage = "Failed to get AI recommendation. Please try again.";
+    if (error instanceof Error) {
+        if (error.message.toLowerCase().includes('fetch')) {
+            errorMessage = "A network error occurred. Please check your internet connection and try again.";
+        } else if (error.message.toLowerCase().includes('api key')) {
+             errorMessage = "The AI service is not configured correctly. Please contact support.";
+        }
+    }
+    throw new Error(errorMessage);
   }
 };
 
@@ -77,7 +85,15 @@ export const generateContentWithImage = async (prompt: string, imageBase64: stri
         return response;
     } catch (error) {
         console.error("Error calling Gemini API with image:", error);
-        throw new Error("Failed to analyze the image. Please try again.");
+        let errorMessage = "Failed to analyze the image. Please try again.";
+        if (error instanceof Error) {
+            if (error.message.toLowerCase().includes('fetch')) {
+                errorMessage = "A network error occurred while analyzing the image. Please check your connection.";
+            } else if (error.message.toLowerCase().includes('api key')) {
+                errorMessage = "The AI service is not configured correctly. Please contact support.";
+            }
+        }
+        throw new Error(errorMessage);
     }
 };
 
