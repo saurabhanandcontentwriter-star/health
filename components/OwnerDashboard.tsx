@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { User, Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, LabTestBooking } from '../types';
 import { UsersIcon, StethoscopeIcon, RupeeIcon, ActivityIcon, HourglassIcon } from './IconComponents';
@@ -106,6 +107,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
                         users={users}
                         appointments={appointments}
                         medicineOrders={medicineOrders}
+                        labTestBookings={labTestBookings}
                    />
                 );
             case 'doctors':

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { User, Appointment, MedicineOrder } from '../types';
-import { SearchIcon, StethoscopeIcon, RupeeIcon, ShoppingBagIcon, FileTextIcon } from './IconComponents';
+import { User, Appointment, MedicineOrder, LabTestBooking } from '../types';
+import { SearchIcon, StethoscopeIcon, RupeeIcon, ShoppingBagIcon, FileTextIcon, BeakerIcon } from './IconComponents';
 import { CONSULTATION_FEE } from '../utils/constants';
 
 const formatCurrency = (amount: number) => {
@@ -11,10 +11,11 @@ interface PatientDetailModalProps {
     patient: User;
     appointments: Appointment[];
     medicineOrders: MedicineOrder[];
+    labTestBookings: LabTestBooking[];
     onClose: () => void;
 }
 
-const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, appointments, medicineOrders, onClose }) => {
+const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, appointments, medicineOrders, labTestBookings, onClose }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4" onClick={onClose}>
             <div className="bg-gray-50 dark:bg-gray-900 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
@@ -70,6 +71,30 @@ const PatientDetailModal: React.FC<PatientDetailModalProps> = ({ patient, appoin
                             )}
                         </div>
                     </div>
+
+                    {/* Lab Test Booking History */}
+                    <div>
+                        <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-3">Lab Test Booking History ({labTestBookings.length})</h3>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border dark:border-gray-700">
+                            {labTestBookings.length > 0 ? (
+                                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {labTestBookings.map(booking => (
+                                        <li key={booking.id} className="py-3">
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <p className="font-semibold text-gray-800 dark:text-gray-100">{booking.testName}</p>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400">{new Date(booking.bookingDate).toLocaleDateString()}</p>
+                                                </div>
+                                                <p className={`font-semibold ${booking.status === 'Cancelled' ? 'text-gray-500 line-through' : 'text-gray-800 dark:text-gray-100'}`}>{formatCurrency(booking.totalAmount)}</p>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-center text-gray-500 dark:text-gray-400 py-4">No lab test bookings found.</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -81,9 +106,10 @@ interface PatientsViewProps {
     users: User[];
     appointments: Appointment[];
     medicineOrders: MedicineOrder[];
+    labTestBookings: LabTestBooking[];
 }
 
-const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medicineOrders }) => {
+const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medicineOrders, labTestBookings }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
 
@@ -93,23 +119,26 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
         return patients.map(patient => {
             const patientAppointments = appointments.filter(a => a.userId === patient.id);
             const patientOrders = medicineOrders.filter(o => o.userId === patient.id);
+            const patientLabBookings = labTestBookings.filter(b => b.userId === patient.id);
 
             const appointmentIncome = patientAppointments.length * CONSULTATION_FEE;
-            // CORRECTED: Use subtotal for consistent, pre-tax revenue calculation
             const medicineIncome = patientOrders.reduce((sum, order) => sum + order.subtotal, 0);
-            const totalIncome = appointmentIncome + medicineIncome;
+            const labIncome = patientLabBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + booking.subtotal, 0);
+            const totalIncome = appointmentIncome + medicineIncome + labIncome;
 
             return {
                 ...patient,
                 appointmentCount: patientAppointments.length,
                 orderCount: patientOrders.length,
+                labBookingCount: patientLabBookings.length,
                 totalIncome,
                 appointments: patientAppointments,
-                medicineOrders: patientOrders
+                medicineOrders: patientOrders,
+                labTestBookings: patientLabBookings
             };
         }).sort((a, b) => b.totalIncome - a.totalIncome);
 
-    }, [users, appointments, medicineOrders]);
+    }, [users, appointments, medicineOrders, labTestBookings]);
     
     const selectedPatientDetails = useMemo(() => {
         if (!selectedPatientId) return null;
@@ -170,6 +199,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
                     patient={selectedPatientDetails}
                     appointments={selectedPatientDetails.appointments}
                     medicineOrders={selectedPatientDetails.medicineOrders}
+                    labTestBookings={selectedPatientDetails.labTestBookings}
                     onClose={() => setSelectedPatientId(null)}
                 />
             )}
