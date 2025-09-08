@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy } from '../types';
-import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, RefreshCwIcon, PlusCircleIcon, TestTubeIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon } from './IconComponents';
+import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, RefreshCwIcon, PlusCircleIcon, TestTubeIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon, RefundIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import DoctorForm from './AddDoctorForm';
@@ -116,6 +116,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
   const [generatedOtp, setGeneratedOtp] = useState('');
   const [transferError, setTransferError] = useState('');
 
+  // Refund State
+  const [refundStep, setRefundStep] = useState<'details' | 'otp' | 'success'>('details');
+  const [refundOrderId, setRefundOrderId] = useState('');
+  const [refundAmount, setRefundAmount] = useState('');
+  const [refundUpiId, setRefundUpiId] = useState('');
+  const [refundReason, setRefundReason] = useState('');
+  const [refundOtp, setRefundOtp] = useState('');
+  const [generatedRefundOtp, setGeneratedRefundOtp] = useState('');
+  const [refundError, setRefundError] = useState('');
+
   const totalAppointmentRevenue = appointments.length * CONSULTATION_FEE;
   const totalMedicineRevenue = allMedicineOrders.reduce((sum, order) => sum + order.subtotal, 0);
   const totalLabRevenue = allLabTestBookings.filter(b => b.status !== 'Cancelled').reduce((sum, booking) => sum + booking.subtotal, 0);
@@ -217,6 +227,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
     setTransferError('');
   }
 
+  const handleInitiateRefund = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRefundError('');
+    if (!refundOrderId || !refundAmount || Number(refundAmount) <= 0 || !refundUpiId) {
+        setRefundError('Please fill all required fields with valid data.'); return;
+    }
+    if (!/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(refundUpiId)) {
+        setRefundError('Please enter a valid UPI ID (e.g., user@bank).'); return;
+    }
+    const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedRefundOtp(newOtp);
+    setRefundStep('otp');
+  };
+
+  const handleConfirmRefund = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRefundError('');
+    if (refundOtp !== generatedRefundOtp) {
+        setRefundError('Invalid OTP. Please try again.'); return;
+    }
+    setRefundStep('success');
+  };
+
+  const resetRefund = () => {
+    setRefundStep('details');
+    setRefundOrderId('');
+    setRefundAmount('');
+    setRefundUpiId('');
+    setRefundReason('');
+    setRefundOtp('');
+    setGeneratedRefundOtp('');
+    setRefundError('');
+  }
+
   const inputClasses = "w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white";
 
   return (
@@ -254,7 +298,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
       </div>
 
       {/* Tools Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
             <div className="flex items-center mb-4">
                 <QrCodeIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
@@ -314,6 +358,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ doctors, appointments, 
                     <h4 className="font-bold text-lg">Transfer Successful!</h4>
                     <p className="text-sm">Transaction ID: <span className="font-mono">TXN{Date.now()}</span></p>
                     <button onClick={resetTransfer} className="w-full py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">New Transfer</button>
+                </div>
+            )}
+        </div>
+         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+            <div className="flex items-center mb-4">
+                <RefundIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Initiate Refund</h3>
+            </div>
+            {refundStep === 'details' && (
+                <form onSubmit={handleInitiateRefund} className="space-y-4">
+                     <input type="text" value={refundOrderId} onChange={e => setRefundOrderId(e.target.value)} placeholder="Order/Booking ID" className={inputClasses} required />
+                     <input type="number" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} placeholder="Amount (₹)" className={inputClasses} required />
+                     <input type="text" value={refundUpiId} onChange={e => setRefundUpiId(e.target.value)} placeholder="Customer UPI ID" className={inputClasses} required />
+                     <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} placeholder="Reason for refund (optional)" rows={2} className={inputClasses} />
+                     {refundError && (
+                         <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{refundError}</span>
+                        </div>
+                    )}
+                     <button type="submit" className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Initiate</button>
+                </form>
+            )}
+            {refundStep === 'otp' && (
+                <form onSubmit={handleConfirmRefund} className="space-y-4">
+                    <p className="text-sm dark:text-gray-300">Refunding <span className="font-bold">{formatCurrency(Number(refundAmount))}</span> to <span className="font-mono">{refundUpiId}</span></p>
+                    <div className="p-2 bg-yellow-100 text-yellow-800 text-center rounded-md"><p>Simulated OTP: <span className="font-bold">{generatedRefundOtp}</span></p></div>
+                    <input type="text" value={refundOtp} onChange={e => setRefundOtp(e.target.value)} placeholder="Enter 6-digit OTP" className={inputClasses} required />
+                    {refundError && (
+                         <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{refundError}</span>
+                        </div>
+                    )}
+                    <button type="submit" className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Confirm Refund</button>
+                </form>
+            )}
+             {refundStep === 'success' && (
+                <div className="text-center space-y-4">
+                    <CheckCircleIcon className="w-12 h-12 text-green-500 mx-auto" />
+                    <h4 className="font-bold text-lg">Refund Initiated!</h4>
+                    <p className="text-sm">Transaction ID: <span className="font-mono">REF{Date.now()}</span></p>
+                    <button onClick={resetRefund} className="w-full py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">New Refund</button>
                 </div>
             )}
         </div>

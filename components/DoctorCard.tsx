@@ -1,22 +1,16 @@
 
-import React, { useState, useMemo } from 'react';
+
+import React from 'react';
 import { Doctor } from '../types';
-import { StethoscopeIcon, MapPinIcon, ClockIcon, VideoIcon } from './IconComponents';
-import { generateTimeSlots } from '../utils/timeUtils';
+import { StethoscopeIcon, MapPinIcon, ClockIcon, VideoIcon, CalendarIcon } from './IconComponents';
 
 interface DoctorCardProps {
   doctor: Doctor;
-  onBook: (doctor: Doctor, slot: string) => void;
+  onViewAvailability: (doctor: Doctor) => void;
   onVideoCall: (doctor: Doctor) => void;
 }
 
-const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBook, onVideoCall }) => {
-  const [showAllSlots, setShowAllSlots] = useState(false);
-  const slots = useMemo(() => generateTimeSlots(doctor.available_time), [doctor.available_time]);
-
-  const SLOTS_TO_SHOW = 4;
-  const visibleSlots = showAllSlots ? slots : slots.slice(0, SLOTS_TO_SHOW);
-
+const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onViewAvailability, onVideoCall }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:border dark:border-gray-700 dark:hover:border-teal-500 flex flex-col">
       <div className="p-6 flex-grow">
@@ -46,41 +40,24 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onBook, onVideoCall }) 
       </div>
 
       <div className="px-6 pb-6 pt-4 bg-gray-50/70 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700">
-        <div className="flex justify-between items-center mb-3">
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Book a Slot</h4>
+        <div className="grid grid-cols-2 gap-4">
+            <button
+                onClick={() => onViewAvailability(doctor)}
+                className="w-full flex items-center justify-center px-4 py-2.5 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 shadow-md transition-colors"
+                aria-label={`Check availability for ${doctor.name}`}
+            >
+                <CalendarIcon className="w-4 h-4 mr-2" />
+                Book Slot
+            </button>
             <button
                 onClick={() => onVideoCall(doctor)}
-                className="flex items-center px-3 py-1.5 bg-green-100 text-green-800 text-sm font-semibold rounded-lg hover:bg-green-200 transition-colors dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900"
+                className="w-full flex items-center justify-center px-4 py-2.5 bg-green-100 text-green-800 font-semibold rounded-lg hover:bg-green-200 transition-colors dark:bg-green-900/50 dark:text-green-300 dark:hover:bg-green-900"
                 aria-label={`Start video call with ${doctor.name}`}
             >
                 <VideoIcon className="w-4 h-4 mr-2" />
                 Video Call
             </button>
         </div>
-        {slots.length > 0 ? (
-          <div className="flex flex-wrap gap-2 items-center">
-            {visibleSlots.map(slot => (
-              <button
-                key={slot}
-                onClick={() => onBook(doctor, slot)}
-                className="px-3 py-1.5 border border-teal-200 bg-teal-50 text-teal-700 rounded-md text-sm font-medium hover:bg-teal-100 hover:border-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 transition-colors dark:bg-gray-700 dark:text-teal-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                aria-label={`Book appointment at ${slot}`}
-              >
-                {slot}
-              </button>
-            ))}
-            {slots.length > SLOTS_TO_SHOW && (
-              <button
-                onClick={() => setShowAllSlots(!showAllSlots)}
-                className="px-3 py-1.5 text-teal-600 rounded-md text-sm font-semibold hover:text-teal-800 focus:outline-none focus:ring-1 focus:ring-teal-500 dark:text-teal-400 dark:hover:text-teal-300"
-              >
-                {showAllSlots ? 'Show Less' : `+${slots.length - SLOTS_TO_SHOW} more`}
-              </button>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500 dark:text-gray-400 italic">No time slots available for booking.</p>
-        )}
       </div>
     </div>
   );

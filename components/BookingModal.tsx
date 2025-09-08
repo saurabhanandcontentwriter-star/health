@@ -8,6 +8,7 @@ import { CONSULTATION_FEE, GST_RATE } from '../utils/constants';
 interface BookingModalProps {
   doctor: Doctor;
   selectedSlot: string;
+  selectedDate: string;
   onClose: () => void;
   onBook: (data: AppointmentIn) => Promise<void>;
 }
@@ -16,12 +17,12 @@ const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 };
 
-const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClose, onBook }) => {
+const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selectedDate, onClose, onBook }) => {
   const { user } = useAuth();
   
   // Form state
   const [patientName, setPatientName] = useState('');
-  const [appointmentDate, setAppointmentDate] = useState('');
+  const [appointmentDate, setAppointmentDate] = useState(selectedDate);
   const [appointmentTime, setAppointmentTime] = useState(selectedSlot);
   const [isRepeatVisit, setIsRepeatVisit] = useState(false);
   const [heartBeatRate, setHeartBeatRate] = useState('');
@@ -38,14 +39,17 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
 
   // QR Code state
   const [qrCodeUrl, setQrCodeUrl] = useState('');
-  const today = new Date().toISOString().split('T')[0];
-
+  
   useEffect(() => {
     if (user) {
       setPatientName(`${user.firstName} ${user.lastName}`);
     }
-    setAppointmentDate(today);
-  }, [user, today]);
+  }, [user]);
+
+  useEffect(() => {
+    setAppointmentDate(selectedDate);
+    setAppointmentTime(selectedSlot);
+  }, [selectedDate, selectedSlot]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,7 +141,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
             onChange={(e) => setPatientName(e.target.value)}
             className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             placeholder="e.g., John Doe"
-            required
           />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -147,10 +150,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
                 type="date"
                 id="appointmentDate"
                 value={appointmentDate}
-                min={today}
-                onChange={(e) => setAppointmentDate(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                required
+                onChange={e => setAppointmentDate(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none sm:text-sm dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300"
+                readOnly
               />
             </div>
             <div>
@@ -161,7 +163,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, onClo
                 value={appointmentTime}
                 className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none sm:text-sm dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300"
                 readOnly
-                required
               />
             </div>
         </div>

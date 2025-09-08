@@ -21,6 +21,7 @@ import * as db from './services/dbService';
 import { User, Doctor, Appointment, AppointmentIn, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, LabTest, LabTestBooking, LabTestBookingIn, Message } from './types';
 import { SearchIcon, StethoscopeIcon } from './components/IconComponents';
 import LabTestBookingModal from './components/LabTestBookingModal';
+import AvailabilityModal from './components/AvailabilityModal';
 
 const App: React.FC = () => {
   const [permissionsGranted, setPermissionsGranted] = useState(localStorage.getItem('permissions-granted') === 'true');
@@ -44,8 +45,11 @@ const App: React.FC = () => {
   const [location, setLocation] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([]);
+  
   const [bookingDoctor, setBookingDoctor] = useState<Doctor | null>(null);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedBookingInfo, setSelectedBookingInfo] = useState<{ date: string; slot: string } | null>(null);
+  const [viewingAvailabilityForDoctor, setViewingAvailabilityForDoctor] = useState<Doctor | null>(null);
+  
   const [bookingLabTest, setBookingLabTest] = useState<LabTest | null>(null);
   const [videoCallDoctor, setVideoCallDoctor] = useState<Doctor | null>(null);
   const [reminders, setReminders] = useState<Appointment[]>([]);
@@ -179,9 +183,14 @@ const App: React.FC = () => {
     }
   }, [refreshData, doctors]);
 
-  const handleSelectSlot = (doctor: Doctor, slot: string) => {
+  const handleSelectSlot = (doctor: Doctor, date: string, slot: string) => {
     setBookingDoctor(doctor);
-    setSelectedSlot(slot);
+    setSelectedBookingInfo({ date, slot });
+  };
+  
+  const handleBotBookAppointment = (doctor: Doctor, slot: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    handleSelectSlot(doctor, today, slot);
   };
 
   const handleSelectLabTest = (test: LabTest) => {
@@ -317,7 +326,7 @@ const App: React.FC = () => {
               <DoctorCard 
                 key={doctor.id} 
                 doctor={doctor} 
-                onBook={handleSelectSlot}
+                onViewAvailability={setViewingAvailabilityForDoctor}
                 onVideoCall={handleStartVideoCall} 
               />
             ))}
@@ -351,13 +360,25 @@ const App: React.FC = () => {
         {renderView()}
       </main>
 
-      {bookingDoctor && selectedSlot && (
+      {viewingAvailabilityForDoctor && (
+        <AvailabilityModal
+            doctor={viewingAvailabilityForDoctor}
+            onClose={() => setViewingAvailabilityForDoctor(null)}
+            onSelectSlot={(date, slot) => {
+                handleSelectSlot(viewingAvailabilityForDoctor, date, slot);
+                setViewingAvailabilityForDoctor(null);
+            }}
+        />
+      )}
+
+      {bookingDoctor && selectedBookingInfo && (
         <BookingModal
           doctor={bookingDoctor}
-          selectedSlot={selectedSlot}
+          selectedDate={selectedBookingInfo.date}
+          selectedSlot={selectedBookingInfo.slot}
           onClose={() => {
             setBookingDoctor(null);
-            setSelectedSlot(null);
+            setSelectedBookingInfo(null);
           }}
           onBook={handleBookAppointment}
         />
@@ -389,7 +410,7 @@ const App: React.FC = () => {
       <Chatbot 
         doctors={doctors} 
         labTests={labTests}
-        onBookAppointment={handleSelectSlot}
+        onBookAppointment={handleBotBookAppointment}
         onBookLabTest={handleSelectLabTest}
         setCurrentView={setCurrentView}
         onStartVideoCall={handleStartVideoCall}
