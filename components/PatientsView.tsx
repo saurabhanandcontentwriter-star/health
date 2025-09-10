@@ -172,6 +172,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
                     <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                         <tr>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient Name</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient ID</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Contact</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Income</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Details</th>
@@ -181,6 +182,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
                         {filteredPatients.map((patient) => (
                              <tr key={patient.id} className="dark:hover:bg-gray-700/50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{patient.firstName} {patient.lastName}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 font-mono">BHC-{String(patient.id).padStart(5, '0')}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{patient.phone}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-100">{formatCurrency(patient.totalIncome)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">

@@ -266,6 +266,7 @@ const App: React.FC = () => {
     if (user?.role === 'owner') {
       switch(currentView) {
         case 'ownerDashboard':
+            // FIX: Changed `medicineOrders` to `allMedicineOrders` and `labTestBookings` to `allLabTestBookings` to match OwnerDashboardProps.
             return <OwnerDashboard 
                         activeTab={activeDashboardTab} 
                         users={users} 
@@ -274,8 +275,8 @@ const App: React.FC = () => {
                         authLogs={authLogs} 
                         pharmaCompanies={pharmaCompanies} 
                         sessions={sessions} 
-                        medicineOrders={allMedicineOrders} 
-                        labTestBookings={allLabTestBookings} 
+                        allMedicineOrders={allMedicineOrders}
+                        allLabTestBookings={allLabTestBookings}
                         medicines={medicines}
                         labTests={labTests}
                         refreshData={refreshData}

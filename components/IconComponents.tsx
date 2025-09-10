@@ -1,5 +1,4 @@
 
-
 import React from 'react';
 
 export const StethoscopeIcon: React.FC<{className?: string}> = ({ className }) => (
@@ -418,4 +417,12 @@ export const RefundIcon: React.FC<{className?: string}> = ({ className }) => (
         <polyline points="9 10 4 15 9 20"></polyline>
         <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
     </svg>
+);
+
+export const MenuIcon: React.FC<{className?: string}> = ({ className }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
 );
