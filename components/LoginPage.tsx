@@ -30,6 +30,12 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
         generateCaptcha();
     }, [generateCaptcha]);
 
+    useEffect(() => {
+        if (step === 'otp' && generatedOtp) {
+            setOtp(generatedOtp);
+        }
+    }, [step, generatedOtp]);
+
     const handleGetOtp = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -129,9 +135,9 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
                 <label htmlFor="phone-display" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone Number</label>
                 <input type="tel" id="phone-display" value={phone} className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300" disabled />
             </div>
-            <div className="p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-700 text-center">
-                <p className="font-bold">Your OTP is: {generatedOtp}</p>
-                <p className="text-xs">This is for simulation purposes. Do not share real OTPs.</p>
+            <div className="p-3 bg-blue-100 border-l-4 border-blue-400 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-500/50 text-center">
+                <p className="text-sm">For simulation, the OTP has been auto-filled.</p>
+                <p className="text-xs">In a real app, you would receive this via SMS.</p>
             </div>
              <div>
                 <label htmlFor="otp" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Enter OTP</label>
@@ -182,6 +188,12 @@ const SignupForm: React.FC = () => {
     useEffect(() => {
         generateCaptcha();
     }, [generateCaptcha]);
+
+    useEffect(() => {
+        if (step === 'otp' && generatedOtp) {
+            setOtp(generatedOtp);
+        }
+    }, [step, generatedOtp]);
 
 
     const handleGetOtp = async (e: React.FormEvent) => {
@@ -288,9 +300,9 @@ const SignupForm: React.FC = () => {
 
      return (
         <form onSubmit={handleSignup} className="space-y-6">
-            <div className="p-3 bg-yellow-100 border-l-4 border-yellow-400 text-yellow-700 text-center">
-                <p className="font-bold">Your OTP is: {generatedOtp}</p>
-                 <p className="text-xs">This is for simulation purposes.</p>
+            <div className="p-3 bg-blue-100 border-l-4 border-blue-400 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-500/50 text-center">
+                <p className="text-sm">For simulation, the OTP has been auto-filled.</p>
+                <p className="text-xs">In a real app, you would receive this via SMS.</p>
             </div>
              <div>
                 <label htmlFor="otp-signup" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Enter OTP</label>

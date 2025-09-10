@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Doctor, AppointmentIn } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { FileTextIcon, QrCodeIcon, XCircleIcon } from './IconComponents';
+import { FileTextIcon, QrCodeIcon, XCircleIcon, CheckCircleIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import { CONSULTATION_FEE, GST_RATE } from '../utils/constants';
 
@@ -356,7 +356,8 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
     };
 
     return (
-      <div className="text-center">
+      <div className="text-center py-8">
+        <CheckCircleIcon className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h3 className="text-2xl font-bold text-green-600 dark:text-green-400 mb-4">Appointment Confirmed!</h3>
         <p className="text-gray-700 dark:text-gray-300">Your appointment with <span className="font-semibold text-teal-700 dark:text-teal-400">Dr. {doctor.name}</span> for <span className="font-semibold text-teal-700 dark:text-teal-400">{new Date(appointmentDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} at {appointmentTime}</span> is booked.</p>
         <p className="text-gray-600 dark:text-gray-400 mt-2">A confirmation SMS has been sent to your registered mobile number.</p>

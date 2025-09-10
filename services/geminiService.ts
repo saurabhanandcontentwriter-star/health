@@ -1,4 +1,5 @@
 import { GoogleGenAI, Type, Chat, GenerateContentResponse } from "@google/genai";
+import { Appointment, LabTestBooking } from '../types';
 
 const recommendationSchema = {
   type: Type.OBJECT,
@@ -98,17 +99,37 @@ export const generateContentWithImage = async (prompt: string, imageBase64: stri
 };
 
 
-export const startChat = (): Chat | null => {
+export const startChat = (appointmentHistory: Appointment[] = [], labTestHistory: LabTestBooking[] = []): Chat | null => {
     const API_KEY = process.env.API_KEY;
 
     if (!API_KEY) {
         console.error("API_KEY environment variable not set. Chatbot is disabled.");
         return null;
     }
+
+    let historyContext = "";
+
+    if (appointmentHistory.length > 0) {
+        historyContext += "Here is the user's past appointment history (most recent first):\n";
+        const sortedAppointments = [...appointmentHistory].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        sortedAppointments.slice(0, 5).forEach(appt => {
+            historyContext += `- Appointment with Dr. ${appt.doctor_name} on ${appt.appointment_date} for symptoms: "${appt.symptoms || 'not specified'}".\n`;
+        });
+    }
+
+    if (labTestHistory.length > 0) {
+        historyContext += "\nHere is the user's past lab test history (most recent first):\n";
+        const sortedLabTests = [...labTestHistory].sort((a, b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
+        sortedLabTests.slice(0, 5).forEach(test => {
+            historyContext += `- Booked "${test.testName}" on ${new Date(test.bookingDate).toLocaleDateString()}. Status: ${test.status}.\n`;
+        });
+    }
     
     const ai = new GoogleGenAI({ apiKey: API_KEY });
-    const systemInstruction = `You are a friendly and helpful AI Bot for Bihar Health Connect.
+    const systemInstruction = `${historyContext ? `CONTEXT ABOUT THE USER:\n${historyContext}\n\n` : ''}You are a friendly and helpful AI Bot for Bihar Health Connect.
 Your goal is to assist users with health inquiries, finding doctors, booking lab tests, and ordering medicines. You can now also analyze images.
+
+**IMPORTANT**: Use the provided user context (appointment and lab test history) to give more personalized and relevant responses. For example, if a user mentions symptoms similar to a past appointment, you can acknowledge their history (e.g., "I see you had an appointment for a similar issue before..."). This makes your assistance more helpful.
 
 Here's how you should handle different requests:
 

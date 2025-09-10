@@ -1,4 +1,4 @@
-import { Doctor, Appointment, DoctorIn, AppointmentIn, AuthLog, User, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, MedicineIn, LabTest, LabTestBooking, LabTestBookingIn, DeliveryBoy } from '../types';
+import { Doctor, Appointment, DoctorIn, AppointmentIn, AuthLog, User, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, MedicineIn, LabTest, LabTestBooking, LabTestBookingIn, DeliveryBoy, LabTestIn } from '../types';
 import { GST_RATE } from '../utils/constants';
 
 const DOCTORS_KEY = 'bhc-doctors';
@@ -356,9 +356,20 @@ export const bookAppointment = async (appointmentData: AppointmentIn): Promise<A
         created_at: new Date().toISOString(),
         heart_beat_rate: appointmentData.heart_beat_rate ? Number(appointmentData.heart_beat_rate) : null,
         report_pdf_base64,
+        status: 'Scheduled',
     };
     saveToStorage(APPOINTMENTS_KEY, [...appointments, newAppointment]);
     return newAppointment;
+};
+export const updateAppointmentStatus = (appointmentId: number, status: Appointment['status']) => {
+    const appointments = getAllAppointments();
+    const index = appointments.findIndex(a => a.id === appointmentId);
+    if (index !== -1) {
+        appointments[index].status = status;
+        saveToStorage(APPOINTMENTS_KEY, appointments);
+    } else {
+        throw new Error(`Appointment with ID ${appointmentId} not found.`);
+    }
 };
 
 
@@ -502,6 +513,27 @@ export const deleteAddress = (id: number) => {
 
 // Lab Test Functions
 export const getLabTests = (): LabTest[] => getFromStorage(LAB_TESTS_KEY, []);
+export const addLabTest = (testData: LabTestIn) => {
+    const tests = getLabTests();
+    const newTest: LabTest = {
+        ...testData,
+        id: getNextId(tests),
+    };
+    saveToStorage(LAB_TESTS_KEY, [...tests, newTest]);
+};
+export const updateLabTest = (updatedTest: LabTest) => {
+    const tests = getLabTests();
+    const index = tests.findIndex(t => t.id === updatedTest.id);
+    if (index !== -1) {
+        tests[index] = updatedTest;
+        saveToStorage(LAB_TESTS_KEY, tests);
+    }
+};
+export const deleteLabTest = (id: number) => {
+    let tests = getLabTests();
+    tests = tests.filter(t => t.id !== id);
+    saveToStorage(LAB_TESTS_KEY, tests);
+};
 
 // Lab Test Booking Functions
 export const getAllLabTestBookings = (): LabTestBooking[] => getFromStorage(LAB_TEST_BOOKINGS_KEY, []);

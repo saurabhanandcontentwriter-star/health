@@ -33,6 +33,7 @@ export interface Appointment {
   blood_test_notes: string;
   nutrition_notes: string;
   report_pdf_base64?: string;
+  status: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show';
 }
 
 export interface DoctorIn {
@@ -146,6 +147,16 @@ export interface MedicineIn {
 
 export interface LabTest {
     id: number;
+    name: string;
+    description: string;
+    price: number;
+    mrp: number;
+    preparations: string;
+    includes: string[];
+    imageUrl: string;
+}
+
+export interface LabTestIn {
     name: string;
     description: string;
     price: number;

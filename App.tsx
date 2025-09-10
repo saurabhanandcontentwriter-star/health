@@ -22,11 +22,13 @@ import { User, Doctor, Appointment, AppointmentIn, PharmaCompany, UserSession, M
 import { SearchIcon, StethoscopeIcon } from './components/IconComponents';
 import LabTestBookingModal from './components/LabTestBookingModal';
 import AvailabilityModal from './components/AvailabilityModal';
+import DoctorDetailModal from './components/DoctorDetailModal';
 
 const App: React.FC = () => {
   const [permissionsGranted, setPermissionsGranted] = useState(localStorage.getItem('permissions-granted') === 'true');
   const { isAuthenticated, user, authLogs } = useAuth();
   const [currentView, setCurrentView] = useState<'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests' | 'appointmentHistory' | 'profile' | 'orderHistory'>('search');
+  const [activeDashboardTab, setActiveDashboardTab] = useState<string>('overview');
   
   const [users, setUsers] = useState<User[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -49,6 +51,7 @@ const App: React.FC = () => {
   const [bookingDoctor, setBookingDoctor] = useState<Doctor | null>(null);
   const [selectedBookingInfo, setSelectedBookingInfo] = useState<{ date: string; slot: string } | null>(null);
   const [viewingAvailabilityForDoctor, setViewingAvailabilityForDoctor] = useState<Doctor | null>(null);
+  const [viewingDoctor, setViewingDoctor] = useState<Doctor | null>(null);
   
   const [bookingLabTest, setBookingLabTest] = useState<LabTest | null>(null);
   const [videoCallDoctor, setVideoCallDoctor] = useState<Doctor | null>(null);
@@ -107,6 +110,7 @@ const App: React.FC = () => {
       
       if(!validViewsForRole[user.role].includes(currentView)){
           setCurrentView(defaultViewForRole[user.role]);
+          setActiveDashboardTab('overview');
       }
       
       const storageKey = `welcomeModalShown_for_user_${user.id}`;
@@ -120,31 +124,31 @@ const App: React.FC = () => {
       const checkReminders = () => {
           const userAppointments = db.getAllAppointments().filter(a => a.userId === user.id);
           const now = new Date();
-          const todayStr = now.toISOString().split('T')[0];
-          const tomorrow = new Date();
-          tomorrow.setDate(now.getDate() + 1);
-          const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
           const upcomingAppointments = userAppointments.filter(appt => {
-              if (!appt.appointment_date) return false;
+              if (!appt.appointment_date || !appt.appointment_time) return false;
 
-              if (appt.appointment_date === todayStr || appt.appointment_date === tomorrowStr) {
-                  if (appt.appointment_date === todayStr) {
-                      const parseTime = (timeStr: string): { hours: number, minutes: number } => {
-                          const [time, modifier] = timeStr.split(' ');
-                          let [h, m] = time.split(':').map(Number);
-                          if (modifier === 'PM' && h < 12) h += 12;
-                          if (modifier === 'AM' && h === 12) h = 0;
-                          return { hours: h, minutes: m };
-                      };
-                      const { hours, minutes } = parseTime(appt.appointment_time);
-                      const apptDateTime = new Date(appt.appointment_date + 'T00:00:00');
-                      apptDateTime.setHours(hours, minutes);
-                      return apptDateTime > now;
-                  }
-                  return true;
+              // Construct the full appointment Date object for accurate comparison
+              const [time, modifier] = appt.appointment_time.split(' ');
+              let [hours, minutes] = time.split(':').map(Number);
+              if (modifier.toUpperCase() === 'PM' && hours < 12) hours += 12;
+              if (modifier.toUpperCase() === 'AM' && hours === 12) hours = 0;
+              
+              const [year, month, day] = appt.appointment_date.split('-').map(Number);
+              const apptDateTime = new Date(year, month - 1, day, hours, minutes);
+
+              // Check if the appointment is in the future
+              if (apptDateTime < now) {
+                  return false;
               }
-              return false;
+
+              // Check if the appointment date is today or tomorrow
+              const apptDateOnly = new Date(year, month - 1, day);
+              const todayDateOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              const tomorrowDateOnly = new Date(todayDateOnly);
+              tomorrowDateOnly.setDate(todayDateOnly.getDate() + 1);
+
+              return apptDateOnly.getTime() === todayDateOnly.getTime() || apptDateOnly.getTime() === tomorrowDateOnly.getTime();
           });
           
           const shownReminders = JSON.parse(sessionStorage.getItem('shownReminders') || '[]');
@@ -244,7 +248,7 @@ const App: React.FC = () => {
         return <VideoCallView doctor={videoCallDoctor} onEndCall={handleEndVideoCall} />;
     }
     if (currentView === 'profile' && user) {
-        return <UserProfile user={user} addresses={addresses} onDataRefresh={refreshData} />;
+        return <UserProfile user={user} addresses={addresses} appointments={userAppointments} onDataRefresh={refreshData} />;
     }
     if (currentView === 'orderHistory' && user) {
         return <OrderHistoryView medicineOrders={medicineOrders} labTestBookings={labTestBookings} />;
@@ -262,7 +266,20 @@ const App: React.FC = () => {
     if (user?.role === 'owner') {
       switch(currentView) {
         case 'ownerDashboard':
-            return <OwnerDashboard users={users} doctors={doctors} appointments={appointments} authLogs={authLogs} pharmaCompanies={pharmaCompanies} sessions={sessions} medicineOrders={allMedicineOrders} labTestBookings={allLabTestBookings} />;
+            return <OwnerDashboard 
+                        activeTab={activeDashboardTab} 
+                        users={users} 
+                        doctors={doctors} 
+                        appointments={appointments} 
+                        authLogs={authLogs} 
+                        pharmaCompanies={pharmaCompanies} 
+                        sessions={sessions} 
+                        medicineOrders={allMedicineOrders} 
+                        labTestBookings={allLabTestBookings} 
+                        medicines={medicines}
+                        labTests={labTests}
+                        refreshData={refreshData}
+                    />;
         case 'search':
         default:
           // Owners can also search, so fall through to the search view
@@ -274,6 +291,8 @@ const App: React.FC = () => {
       switch(currentView) {
         case 'dashboard':
           return <AdminDashboard 
+                    activeTab={activeDashboardTab}
+                    users={users}
                     doctors={doctors} 
                     appointments={appointments} 
                     authLogs={authLogs} 
@@ -282,6 +301,7 @@ const App: React.FC = () => {
                     allMedicineOrders={allMedicineOrders}
                     medicines={medicines}
                     allLabTestBookings={allLabTestBookings}
+                    labTests={labTests}
                     refreshData={refreshData}
                  />;
         case 'search':
@@ -326,8 +346,7 @@ const App: React.FC = () => {
               <DoctorCard 
                 key={doctor.id} 
                 doctor={doctor} 
-                onViewAvailability={setViewingAvailabilityForDoctor}
-                onVideoCall={handleStartVideoCall} 
+                onClick={setViewingDoctor}
               />
             ))}
           </div>
@@ -354,11 +373,31 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header currentView={currentView} setCurrentView={setCurrentView} />
+      <Header 
+        currentView={currentView} 
+        setCurrentView={setCurrentView} 
+        activeDashboardTab={activeDashboardTab}
+        setActiveDashboardTab={setActiveDashboardTab}
+      />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderView()}
       </main>
+
+      {viewingDoctor && (
+        <DoctorDetailModal
+          doctor={viewingDoctor}
+          onClose={() => setViewingDoctor(null)}
+          onBookSlot={(doctor) => {
+            setViewingDoctor(null);
+            setViewingAvailabilityForDoctor(doctor);
+          }}
+          onVideoCall={(doctor) => {
+            setViewingDoctor(null);
+            handleStartVideoCall(doctor);
+          }}
+        />
+      )}
 
       {viewingAvailabilityForDoctor && (
         <AvailabilityModal
@@ -410,6 +449,8 @@ const App: React.FC = () => {
       <Chatbot 
         doctors={doctors} 
         labTests={labTests}
+        appointments={userAppointments}
+        labTestBookings={labTestBookings}
         onBookAppointment={handleBotBookAppointment}
         onBookLabTest={handleSelectLabTest}
         setCurrentView={setCurrentView}

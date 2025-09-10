@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { startChat, generateContentWithImage } from '../services/geminiService';
 import type { Chat, GenerateContentResponse } from '@google/genai';
-import { Doctor, LabTest, Message } from '../types';
+import { Doctor, LabTest, Message, Appointment, LabTestBooking } from '../types';
 import { MinimizeIcon, SendIcon, BotIcon, StethoscopeIcon, MapPinIcon, PlusIcon, PaperclipIcon, ImageIcon, CameraIcon, XIcon } from './IconComponents';
 import FaceScanModal from './FaceScanModal';
 
@@ -70,6 +70,8 @@ const formatTimestamp = (isoString: string): string => {
 interface ChatbotProps {
     doctors: Doctor[];
     labTests: LabTest[];
+    appointments: Appointment[];
+    labTestBookings: LabTestBooking[];
     onBookAppointment: (doctor: Doctor, slot: string) => void;
     onBookLabTest: (test: LabTest) => void;
     setCurrentView: (view: 'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests') => void;
@@ -78,7 +80,7 @@ interface ChatbotProps {
     onNewMessageConsumed: () => void;
 }
 
-const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, onBookAppointment, onBookLabTest, setCurrentView, onStartVideoCall, newMessage, onNewMessageConsumed }) => {
+const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labTestBookings, onBookAppointment, onBookLabTest, setCurrentView, onStartVideoCall, newMessage, onNewMessageConsumed }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
@@ -137,7 +139,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, onBookAppointment,
 
     useEffect(() => {
         if (isOpen && !chatRef.current) {
-            const chatSession = startChat();
+            const chatSession = startChat(appointments, labTestBookings);
             if(chatSession) {
                 chatRef.current = chatSession;
                 if(messages.length === 0) {
@@ -158,7 +160,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, onBookAppointment,
                 }
             }
         }
-    }, [isOpen, messages.length]);
+    }, [isOpen, messages.length, appointments, labTestBookings]);
 
     const handleToggleDoctorSlots = (messageIndex: number, doctorId: number) => {
         if (expandedDoctor && expandedDoctor.messageIndex === messageIndex && expandedDoctor.doctorId === doctorId) {

@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Address } from '../types';
+import { User, Address, Appointment } from '../types';
 import * as db from '../services/dbService';
-import { PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon, CameraIcon, XCircleIcon } from './IconComponents';
+import { PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon, CameraIcon, XCircleIcon, FileTextIcon } from './IconComponents';
 import AddressEditor from './AddressEditor';
 
 
 interface UserProfileProps {
     user: User;
     addresses: Address[];
+    appointments: Appointment[];
     onDataRefresh: () => void;
 }
 
@@ -17,7 +18,7 @@ const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 };
 
-const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses, onDataRefresh }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses, appointments, onDataRefresh }) => {
     const { user, refreshAuth } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState<Partial<User>>({});
@@ -34,6 +35,16 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
     const [showDeleteModal, setShowDeleteModal] = useState<Address | null>(null);
     const [deleteStep, setDeleteStep] = useState<'confirm' | 'success'>('confirm');
+
+    const healthReports = appointments.filter(appt => appt.report_pdf_base64).sort((a, b) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime());
+
+    const downloadPdf = (base64String: string, fileName: string) => {
+        const linkSource = base64String;
+        const downloadLink = document.createElement("a");
+        downloadLink.href = linkSource;
+        downloadLink.download = fileName;
+        downloadLink.click();
+    }
 
     useEffect(() => {
         if (user) {
@@ -306,6 +317,38 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
 
                     {addresses.length === 0 && !isAddingAddress && (
                         <p className="text-center text-gray-500 dark:text-gray-400 py-4">You have no saved addresses.</p>
+                    )}
+                </div>
+            </div>
+
+            {/* Health Reports Section */}
+            <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Health Reports</h2>
+                </div>
+                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                    {healthReports.length > 0 ? (
+                        healthReports.map(report => (
+                            <div key={report.id} className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border dark:border-gray-600 flex justify-between items-center">
+                                <div>
+                                    <p className="font-semibold text-gray-800 dark:text-gray-100">
+                                        Report from appointment with Dr. {report.doctor_name}
+                                    </p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                        Date: {new Date(report.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => downloadPdf(report.report_pdf_base64!, `report_${report.appointment_date}.pdf`)}
+                                    className="inline-flex items-center px-4 py-2 bg-teal-100 text-teal-800 text-sm font-semibold rounded-lg hover:bg-teal-200 transition-colors dark:bg-teal-900/50 dark:text-teal-300 dark:hover:bg-teal-900"
+                                >
+                                    <FileTextIcon className="w-5 h-5 mr-2" />
+                                    Download
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-center text-gray-500 dark:text-gray-400 py-4">You have no uploaded health reports.</p>
                     )}
                 </div>
             </div>
