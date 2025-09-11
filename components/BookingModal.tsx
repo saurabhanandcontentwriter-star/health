@@ -98,6 +98,9 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
   };
 
   const handleConfirmBooking = async () => {
+    if (!window.confirm('Are you sure you want to book this appointment?')) {
+      return;
+    }
     setIsLoading(true);
     setError(''); // Clear previous errors
     if (!user) {
