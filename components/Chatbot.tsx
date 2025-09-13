@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { startChat, generateContentWithImage } from '../services/geminiService';
 import type { Chat, GenerateContentResponse } from '@google/genai';

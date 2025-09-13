@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { CameraIcon, RefreshCwIcon, CheckCircleIcon } from './IconComponents';
 

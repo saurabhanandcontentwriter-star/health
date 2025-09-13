@@ -251,15 +251,15 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
             </body>
           </html>
         `;
-        const blob = new Blob([receiptContent], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `lab-test-receipt-${new Date().getTime()}.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write(receiptContent);
+            printWindow.document.close();
+            printWindow.focus();
+            printWindow.print();
+        } else {
+            alert('Please allow popups to print the receipt.');
+        }
       };
 
       return (

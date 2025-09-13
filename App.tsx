@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DoctorCard from './components/DoctorCard';
@@ -129,6 +130,7 @@ const App: React.FC = () => {
           const now = new Date();
 
           const upcomingAppointments = userAppointments.filter(appt => {
+              if (appt.status !== 'Scheduled') return false;
               if (!appt.appointment_date || !appt.appointment_time) return false;
 
               // Construct the full appointment Date object for accurate comparison

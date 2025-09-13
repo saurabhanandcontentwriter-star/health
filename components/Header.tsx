@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
@@ -163,7 +164,11 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                 
                 {/* Notification Bell */}
                 <div className="relative" ref={notificationRef}>
-                    <button onClick={() => setIsNotificationsOpen(o => !o)} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative">
+                    <button 
+                        onClick={() => setIsNotificationsOpen(o => !o)} 
+                        className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative"
+                        aria-label={notifications.length > 0 ? `View ${notifications.length} new notifications` : 'View notifications'}
+                    >
                         <BellIcon className="w-6 h-6"/>
                         {notifications.length > 0 && (
                             <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
@@ -187,7 +192,12 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                                                     Reminder for your appointment with <span className="font-bold">{appt.doctor_name}</span> at <span className="font-bold">{appt.appointment_time}</span> on {new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString()}.
                                                 </p>
                                             </div>
-                                            <button onClick={() => onDismissNotification(appt.id)} title="Dismiss reminder" className="text-gray-400 hover:text-red-500 p-1 rounded-full flex-shrink-0">
+                                            <button 
+                                                onClick={() => onDismissNotification(appt.id)} 
+                                                title="Dismiss reminder" 
+                                                aria-label={`Dismiss reminder for appointment with ${appt.doctor_name}`}
+                                                className="text-gray-400 hover:text-red-500 p-1 rounded-full flex-shrink-0"
+                                            >
                                                 <XIcon className="w-4 h-4"/>
                                             </button>
                                         </div>
@@ -250,7 +260,11 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
               {/* Mobile Menu Button */}
               <div className="lg:hidden flex items-center space-x-2">
                   <div className="relative">
-                     <button onClick={() => setIsNotificationsOpen(o => !o)} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative">
+                     <button 
+                        onClick={() => setIsNotificationsOpen(o => !o)} 
+                        className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative"
+                        aria-label={notifications.length > 0 ? `View ${notifications.length} new notifications` : 'View notifications'}
+                     >
                         <BellIcon className="w-6 h-6"/>
                         {notifications.length > 0 && (
                             <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
@@ -274,7 +288,12 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                                                     Reminder for your appointment with <span className="font-bold">{appt.doctor_name}</span> at <span className="font-bold">{appt.appointment_time}</span> on {new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString()}.
                                                 </p>
                                             </div>
-                                            <button onClick={() => onDismissNotification(appt.id)} title="Dismiss reminder" className="text-gray-400 hover:text-red-500 p-1 rounded-full flex-shrink-0">
+                                            <button 
+                                                onClick={() => onDismissNotification(appt.id)} 
+                                                title="Dismiss reminder" 
+                                                aria-label={`Dismiss reminder for appointment with ${appt.doctor_name}`}
+                                                className="text-gray-400 hover:text-red-500 p-1 rounded-full flex-shrink-0"
+                                            >
                                                 <XIcon className="w-4 h-4"/>
                                             </button>
                                         </div>

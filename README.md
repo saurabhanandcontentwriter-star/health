@@ -33,7 +33,7 @@ Netlify is a great platform for hosting static sites. The process is very straig
     - Upload all the project files (`index.html`, `App.tsx`, etc., including the new `README.md` and `package.json`) to this repository.
 
 2.  **Sign up & Connect to Netlify**:
-    - Create a free account on [Netlify](https.com).
+    - Create a free account on [Netlify](https://www.netlify.com).
     - Click "Add new site" -> "Import an existing project".
     - Connect to your GitHub account and select the repository you just created.
 
