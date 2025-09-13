@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { LabTest, Address, User, LabTestBookingIn } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -250,15 +248,18 @@ const LabTestBookingModal: React.FC<LabTestBookingModalProps> = ({ test, address
                    <div class="paid-stamp">PAID</div>
                 </div>
               </div>
-              <script>setTimeout(() => window.print(), 500);</script>
             </body>
           </html>
         `;
-        const receiptWindow = window.open('', '_blank');
-        if (receiptWindow) {
-          receiptWindow.document.write(receiptContent);
-          receiptWindow.document.close();
-        }
+        const blob = new Blob([receiptContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `lab-test-receipt-${new Date().getTime()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       };
 
       return (

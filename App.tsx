@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DoctorCard from './components/DoctorCard';
@@ -55,8 +56,10 @@ const App: React.FC = () => {
   
   const [bookingLabTest, setBookingLabTest] = useState<LabTest | null>(null);
   const [videoCallDoctor, setVideoCallDoctor] = useState<Doctor | null>(null);
-  const [reminders, setReminders] = useState<Appointment[]>([]);
   
+  const [reminders, setReminders] = useState<Appointment[]>([]);
+  const [notificationReminders, setNotificationReminders] = useState<Appointment[]>([]);
+
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [botMessage, setBotMessage] = useState<Message | null>(null);
 
@@ -151,13 +154,19 @@ const App: React.FC = () => {
               return apptDateOnly.getTime() === todayDateOnly.getTime() || apptDateOnly.getTime() === tomorrowDateOnly.getTime();
           });
           
-          const shownReminders = JSON.parse(sessionStorage.getItem('shownReminders') || '[]');
-          const newReminders = upcomingAppointments.filter(a => !shownReminders.includes(a.id));
+          // For ephemeral toast notifications (shown once per session)
+          const shownToastReminders = JSON.parse(sessionStorage.getItem('shownReminders') || '[]');
+          const newRemindersForToast = upcomingAppointments.filter(a => !shownToastReminders.includes(a.id));
 
-          if (newReminders.length > 0) {
-              setReminders(prev => [...prev, ...newReminders]);
-              sessionStorage.setItem('shownReminders', JSON.stringify([...shownReminders, ...newReminders.map(r => r.id)]));
+          if (newRemindersForToast.length > 0) {
+              setReminders(prev => [...prev, ...newRemindersForToast]);
+              sessionStorage.setItem('shownReminders', JSON.stringify([...shownToastReminders, ...newRemindersForToast.map(r => r.id)]));
           }
+          
+          // For persistent notification center (respects dismissals within the session)
+          const dismissedNotifications = JSON.parse(sessionStorage.getItem('dismissedNotifications') || '[]');
+          const activeNotifications = upcomingAppointments.filter(a => !dismissedNotifications.includes(a.id));
+          setNotificationReminders(activeNotifications);
       };
       checkReminders();
 
@@ -216,7 +225,12 @@ const App: React.FC = () => {
   const handleDismissReminder = (id: number) => {
       setReminders(prev => prev.filter(r => r.id !== id));
   };
-
+  
+  const handleDismissNotification = (id: number) => {
+      const dismissed = JSON.parse(sessionStorage.getItem('dismissedNotifications') || '[]');
+      sessionStorage.setItem('dismissedNotifications', JSON.stringify([...dismissed, id]));
+      setNotificationReminders(prev => prev.filter(r => r.id !== id));
+  };
 
   const clearFilters = () => {
       setLocation('');
@@ -379,6 +393,8 @@ const App: React.FC = () => {
         setCurrentView={setCurrentView} 
         activeDashboardTab={activeDashboardTab}
         setActiveDashboardTab={setActiveDashboardTab}
+        notifications={notificationReminders}
+        onDismissNotification={handleDismissNotification}
       />
 
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy, User, LabTest } from '../types';
 import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, PlusCircleIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon, RefundIcon, ShoppingBagIcon, BeakerIcon, TestTubeIcon } from './IconComponents';
@@ -852,7 +853,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         return <LabTestsManagementView {...props} />;
       case 'patients':
         return <PatientsView
-            users={props.users}
+            users={props.users.filter(u => u.role === 'patient')}
             appointments={props.appointments}
             medicineOrders={props.allMedicineOrders}
             labTestBookings={props.allLabTestBookings}

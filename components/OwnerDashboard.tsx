@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy, User, LabTest } from '../types';
 import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, PlusCircleIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon, RefundIcon, ShoppingBagIcon, BeakerIcon, TestTubeIcon } from './IconComponents';
@@ -995,12 +996,6 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
         return <MedicineOrdersView {...props} />;
       case 'testBookings':
         return <TestBookingsView {...props} />;
-      case 'doctors':
-        return <DoctorsView {...props} />;
-      case 'medicines':
-        return <MedicinesView {...props} />;
-      case 'labTests':
-        return <LabTestsManagementView {...props} />;
       case 'users':
         return <PatientsView
             users={props.users}
@@ -1008,6 +1003,12 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
             medicineOrders={props.allMedicineOrders}
             labTestBookings={props.allLabTestBookings}
         />;
+      case 'doctors':
+        return <DoctorsView {...props} />;
+      case 'medicines':
+        return <MedicinesView {...props} />;
+      case 'labTests':
+        return <LabTestsManagementView {...props} />;
       case 'appointments':
         return <AppointmentsView {...props} />;
       case 'logs':
@@ -1020,7 +1021,7 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = (props) => {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Owner Super Admin Panel</h1>
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Owner Dashboard</h1>
       {renderContent()}
     </div>
   );

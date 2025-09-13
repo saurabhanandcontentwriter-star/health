@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { User, Appointment, MedicineOrder, LabTestBooking } from '../types';
 import { SearchIcon, StethoscopeIcon, RupeeIcon, ShoppingBagIcon, FileTextIcon, BeakerIcon } from './IconComponents';
@@ -114,9 +115,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
     const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
 
     const patientData = useMemo(() => {
-        const patients = users.filter(u => u.role === 'patient');
-
-        return patients.map(patient => {
+        return users.map(patient => {
             const patientAppointments = appointments.filter(a => a.userId === patient.id);
             const patientOrders = medicineOrders.filter(o => o.userId === patient.id);
             const patientLabBookings = labTestBookings.filter(b => b.userId === patient.id);
@@ -155,7 +154,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
              <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Patient Management</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">User Management</h3>
                 <div className="relative w-full md:w-1/3">
                     <input
                         type="text"
@@ -171,8 +170,8 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
                         <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient Name</th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Patient ID</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Role</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Contact</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Income</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Details</th>
@@ -182,7 +181,7 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
                         {filteredPatients.map((patient) => (
                              <tr key={patient.id} className="dark:hover:bg-gray-700/50">
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{patient.firstName} {patient.lastName}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 font-mono">BHC-{String(patient.id).padStart(5, '0')}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 capitalize">{patient.role}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{patient.phone}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-100">{formatCurrency(patient.totalIncome)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm">

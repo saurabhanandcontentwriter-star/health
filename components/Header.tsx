@@ -2,23 +2,29 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
-import { ShoppingBagIcon, TestTubeIcon, StethoscopeIcon, FileTextIcon, UserIcon, ChevronDownIcon, ArchiveIcon, LogOutIcon, HomeIcon, TruckIcon, PillIcon, UsersIcon, CalendarIcon, ActivityIcon, BeakerIcon, MenuIcon, XIcon } from './IconComponents';
+import { ShoppingBagIcon, TestTubeIcon, StethoscopeIcon, FileTextIcon, UserIcon, ChevronDownIcon, ArchiveIcon, LogOutIcon, HomeIcon, TruckIcon, PillIcon, UsersIcon, CalendarIcon, ActivityIcon, BeakerIcon, MenuIcon, XIcon, BellIcon, ClockIcon } from './IconComponents';
 import WeatherWidget from './WeatherWidget';
 import ThemeToggle from './ThemeToggle';
+import { Appointment } from '../types';
+
 
 interface HeaderProps {
   currentView: string;
   setCurrentView: (view: 'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests' | 'appointmentHistory' | 'profile' | 'orderHistory') => void;
   activeDashboardTab: string;
   setActiveDashboardTab: (tab: string) => void;
+  notifications: Appointment[];
+  onDismissNotification: (id: number) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDashboardTab, setActiveDashboardTab }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDashboardTab, setActiveDashboardTab, notifications, onDismissNotification }) => {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   
   const menuRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
 
   const navButtonClasses = "px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center";
   const activeClasses = "bg-teal-600 text-white shadow-md";
@@ -29,12 +35,15 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsMenuOpen(false);
       }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [menuRef]);
+  }, [menuRef, notificationRef]);
   
   const mobileNavButtonClasses = "w-full text-left px-4 py-3 rounded-md text-base transition-colors flex items-center";
   const mobileActiveClasses = "bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200";
@@ -128,7 +137,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                             <BeakerIcon className="w-4 h-4 mr-2" /> Test Bookings
                         </button>
                         <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('users'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'users' ? activeClasses : inactiveClasses}`}>
-                             <UsersIcon className="w-4 h-4 mr-2" /> Patients
+                             <UsersIcon className="w-4 h-4 mr-2" /> Users
                         </button>
                         <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('doctors'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'doctors' ? activeClasses : inactiveClasses}`}>
                              <StethoscopeIcon className="w-4 h-4 mr-2" /> Doctors
@@ -151,6 +160,46 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
 
               <div className="hidden lg:flex items-center space-x-2">
                 <ThemeToggle />
+                
+                {/* Notification Bell */}
+                <div className="relative" ref={notificationRef}>
+                    <button onClick={() => setIsNotificationsOpen(o => !o)} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative">
+                        <BellIcon className="w-6 h-6"/>
+                        {notifications.length > 0 && (
+                            <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+                        )}
+                    </button>
+                    {isNotificationsOpen && (
+                        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-20 border dark:border-gray-700 animate-fade-in-fast">
+                            <div className="p-3 border-b dark:border-gray-700 flex justify-between items-center">
+                                <h3 className="font-semibold text-gray-800 dark:text-gray-100">Notifications</h3>
+                                <button onClick={() => setIsNotificationsOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                    <XIcon className="w-5 h-5"/>
+                                </button>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto">
+                                {notifications.length > 0 ? (
+                                    notifications.map(appt => (
+                                        <div key={appt.id} className="p-3 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-start space-x-3">
+                                            <ClockIcon className="w-5 h-5 text-teal-500 mt-1 flex-shrink-0"/>
+                                            <div className="flex-grow">
+                                                <p className="text-sm text-gray-800 dark:text-gray-200">
+                                                    Reminder for your appointment with <span className="font-bold">{appt.doctor_name}</span> at <span className="font-bold">{appt.appointment_time}</span> on {new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString()}.
+                                                </p>
+                                            </div>
+                                            <button onClick={() => onDismissNotification(appt.id)} title="Dismiss reminder" className="text-gray-400 hover:text-red-500 p-1 rounded-full flex-shrink-0">
+                                                <XIcon className="w-4 h-4"/>
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">No new reminders.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
                 <div className="relative" ref={menuRef}>
                     <button
                         onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -199,7 +248,44 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
               </div>
               
               {/* Mobile Menu Button */}
-              <div className="lg:hidden">
+              <div className="lg:hidden flex items-center space-x-2">
+                  <div className="relative">
+                     <button onClick={() => setIsNotificationsOpen(o => !o)} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative">
+                        <BellIcon className="w-6 h-6"/>
+                        {notifications.length > 0 && (
+                            <span className="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+                        )}
+                    </button>
+                    {isNotificationsOpen && (
+                        <div ref={notificationRef} className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-20 border dark:border-gray-700 animate-fade-in-fast">
+                             <div className="p-3 border-b dark:border-gray-700 flex justify-between items-center">
+                                <h3 className="font-semibold text-gray-800 dark:text-gray-100">Notifications</h3>
+                                <button onClick={() => setIsNotificationsOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                    <XIcon className="w-5 h-5"/>
+                                </button>
+                            </div>
+                            <div className="max-h-80 overflow-y-auto">
+                                {notifications.length > 0 ? (
+                                    notifications.map(appt => (
+                                        <div key={appt.id} className="p-3 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 flex items-start space-x-3">
+                                            <ClockIcon className="w-5 h-5 text-teal-500 mt-1 flex-shrink-0"/>
+                                            <div className="flex-grow">
+                                                <p className="text-sm text-gray-800 dark:text-gray-200">
+                                                    Reminder for your appointment with <span className="font-bold">{appt.doctor_name}</span> at <span className="font-bold">{appt.appointment_time}</span> on {new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString()}.
+                                                </p>
+                                            </div>
+                                            <button onClick={() => onDismissNotification(appt.id)} title="Dismiss reminder" className="text-gray-400 hover:text-red-500 p-1 rounded-full flex-shrink-0">
+                                                <XIcon className="w-4 h-4"/>
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">No new reminders.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                  </div>
                   <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <MenuIcon className="w-6 h-6"/>
                   </button>
@@ -265,7 +351,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                                         <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('overview'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'overview' ? mobileActiveClasses : mobileInactiveClasses}`}><HomeIcon className="w-5 h-5 mr-3"/> Overview</button>
                                         <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('medicineOrders'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'medicineOrders' ? mobileActiveClasses : mobileInactiveClasses}`}><ShoppingBagIcon className="w-5 h-5 mr-3"/> Medicine Orders</button>
                                         <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('testBookings'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'testBookings' ? mobileActiveClasses : mobileInactiveClasses}`}><BeakerIcon className="w-5 h-5 mr-3"/> Test Bookings</button>
-                                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('users'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'users' ? mobileActiveClasses : mobileInactiveClasses}`}><UsersIcon className="w-5 h-5 mr-3"/> Patients</button>
+                                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('users'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'users' ? mobileActiveClasses : mobileInactiveClasses}`}><UsersIcon className="w-5 h-5 mr-3"/> Users</button>
                                         <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('doctors'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'doctors' ? mobileActiveClasses : mobileInactiveClasses}`}><StethoscopeIcon className="w-5 h-5 mr-3"/> Doctors</button>
                                         <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('medicines'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'medicines' ? mobileActiveClasses : mobileInactiveClasses}`}><PillIcon className="w-5 h-5 mr-3"/> Medicines</button>
                                         <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('labTests'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'labTests' ? mobileActiveClasses : mobileInactiveClasses}`}><TestTubeIcon className="w-5 h-5 mr-3"/> Lab Tests</button>

@@ -347,15 +347,19 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
                  <div class="paid-stamp">PAID</div>
               </div>
             </div>
-            <script>setTimeout(() => window.print(), 500);</script>
           </body>
         </html>
       `;
-      const receiptWindow = window.open('', '_blank');
-      if (receiptWindow) {
-        receiptWindow.document.write(receiptContent);
-        receiptWindow.document.close();
-      }
+      
+      const blob = new Blob([receiptContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `appointment-receipt-${new Date().getTime()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     };
 
     return (
