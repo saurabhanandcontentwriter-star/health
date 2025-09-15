@@ -25,10 +25,12 @@ import { SearchIcon, StethoscopeIcon } from './components/IconComponents';
 import LabTestBookingModal from './components/LabTestBookingModal';
 import AvailabilityModal from './components/AvailabilityModal';
 import DoctorDetailModal from './components/DoctorDetailModal';
+import Sidebar from './components/Sidebar';
+import PatientSidebar from './components/PatientSidebar';
 
 const App: React.FC = () => {
   const [permissionsGranted, setPermissionsGranted] = useState(localStorage.getItem('permissions-granted') === 'true');
-  const { isAuthenticated, user, authLogs } = useAuth();
+  const { isAuthenticated, user, authLogs, logout } = useAuth();
   const [currentView, setCurrentView] = useState<'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests' | 'appointmentHistory' | 'profile' | 'orderHistory'>('search');
   const [activeDashboardTab, setActiveDashboardTab] = useState<string>('overview');
   
@@ -282,7 +284,6 @@ const App: React.FC = () => {
     if (user?.role === 'owner') {
       switch(currentView) {
         case 'ownerDashboard':
-            // FIX: Changed `medicineOrders` to `allMedicineOrders` and `labTestBookings` to `allLabTestBookings` to match OwnerDashboardProps.
             return <OwnerDashboard 
                         activeTab={activeDashboardTab} 
                         users={users} 
@@ -380,11 +381,15 @@ const App: React.FC = () => {
     );
   };
 
+  const isAdminOrOwner = user && (user.role === 'admin' || user.role === 'owner');
+  const isDashboardView = currentView === 'dashboard' || currentView === 'ownerDashboard';
+  const isPatientDashboardView = user?.role === 'patient' && ['profile', 'appointmentHistory', 'orderHistory'].includes(currentView);
+
   if (!permissionsGranted) {
     return <PermissionGate onAllow={() => setPermissionsGranted(true)} />;
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <LoginPage />;
   }
 
@@ -398,10 +403,28 @@ const App: React.FC = () => {
         notifications={notificationReminders}
         onDismissNotification={handleDismissNotification}
       />
-
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderView()}
-      </main>
+      <div className="relative flex">
+         {isAdminOrOwner && isDashboardView && (
+            <Sidebar
+                user={user}
+                logout={logout}
+                activeTab={activeDashboardTab}
+                setActiveTab={setActiveDashboardTab}
+                setCurrentView={setCurrentView}
+            />
+        )}
+        {isPatientDashboardView && (
+             <PatientSidebar 
+                activeView={currentView}
+                setCurrentView={setCurrentView as any}
+             />
+        )}
+        <main className={`w-full transition-all duration-300 ${(isAdminOrOwner && isDashboardView) || isPatientDashboardView ? 'lg:pl-64' : ''}`}>
+          <div className={`${(isAdminOrOwner && isDashboardView) || isPatientDashboardView ? 'p-4 sm:p-6 lg:p-8' : 'container mx-auto px-4 sm:px-6 lg:px-8 py-8'}`}>
+            {renderView()}
+          </div>
+        </main>
+      </div>
 
       {viewingDoctor && (
         <DoctorDetailModal

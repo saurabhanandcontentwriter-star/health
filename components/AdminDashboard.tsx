@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy, User, LabTest } from '../types';
-import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, PlusCircleIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon, RefundIcon, ShoppingBagIcon, BeakerIcon, TestTubeIcon } from './IconComponents';
+import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, PlusCircleIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon, RefundIcon, ShoppingBagIcon, BeakerIcon, TestTubeIcon, ClipboardCheckIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import DoctorForm from './AddDoctorForm';
@@ -376,7 +376,7 @@ export const MedicineOrdersView: React.FC<MedicineOrdersViewProps> = ({ allMedic
             )}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                 <div className="flex items-center mb-4">
-                    <ShoppingBagIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                    <ClipboardCheckIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
                     <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Medicine Orders</h3>
                 </div>
                 <div className="overflow-x-auto max-h-[60vh]">
@@ -463,7 +463,7 @@ export const TestBookingsView: React.FC<TestBookingsViewProps> = ({ allLabTestBo
             )}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                 <div className="flex items-center mb-4">
-                    <BeakerIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
+                    <TestTubeIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
                     <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Lab Test Bookings</h3>
                 </div>
                 <div className="overflow-x-auto max-h-[60vh]">

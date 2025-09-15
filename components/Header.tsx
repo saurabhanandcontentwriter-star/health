@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
-import { ShoppingBagIcon, TestTubeIcon, StethoscopeIcon, FileTextIcon, UserIcon, ChevronDownIcon, ArchiveIcon, LogOutIcon, HomeIcon, TruckIcon, PillIcon, UsersIcon, CalendarIcon, ActivityIcon, BeakerIcon, MenuIcon, XIcon, BellIcon, ClockIcon } from './IconComponents';
+import { ShoppingBagIcon, TestTubeIcon, StethoscopeIcon, FileTextIcon, UserIcon, ChevronDownIcon, ArchiveIcon, LogOutIcon, LogInIcon, HomeIcon, TruckIcon, PillIcon, UsersIcon, CalendarIcon, ActivityIcon, BeakerIcon, MenuIcon, XIcon, BellIcon, ClockIcon } from './IconComponents';
 import WeatherWidget from './WeatherWidget';
 import ThemeToggle from './ThemeToggle';
 import { Appointment } from '../types';
@@ -90,72 +90,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                         <ShoppingBagIcon className="w-4 h-4 mr-2" /> Pharmacy
                       </button>
                     </>
-                ) : user.role === 'admin' ? (
-                     <>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('overview'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'overview' ? activeClasses : inactiveClasses}`}>
-                            <HomeIcon className="w-4 h-4 mr-2" /> Overview
-                        </button>
-                        <button onClick={() => setCurrentView('search')} className={`${navButtonClasses} ${currentView === 'search' ? activeClasses : inactiveClasses}`}>
-                            <UsersIcon className="w-4 h-4 mr-2" /> Patient View
-                        </button>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('medicineOrders'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'medicineOrders' ? activeClasses : inactiveClasses}`}>
-                            <ShoppingBagIcon className="w-4 h-4 mr-2" /> Medicine Orders
-                        </button>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('testBookings'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'testBookings' ? activeClasses : inactiveClasses}`}>
-                            <BeakerIcon className="w-4 h-4 mr-2" /> Test Bookings
-                        </button>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('patients'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'patients' ? activeClasses : inactiveClasses}`}>
-                            <UsersIcon className="w-4 h-4 mr-2" /> Patients
-                        </button>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('doctors'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'doctors' ? activeClasses : inactiveClasses}`}>
-                            <StethoscopeIcon className="w-4 h-4 mr-2" /> Doctors
-                        </button>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('medicines'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'medicines' ? activeClasses : inactiveClasses}`}>
-                            <PillIcon className="w-4 h-4 mr-2" /> Medicines
-                        </button>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('labTests'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'labTests' ? activeClasses : inactiveClasses}`}>
-                            <TestTubeIcon className="w-4 h-4 mr-2" /> Lab Tests
-                        </button>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('appointments'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'appointments' ? activeClasses : inactiveClasses}`}>
-                            <CalendarIcon className="w-4 h-4 mr-2" /> Appointments
-                        </button>
-                        <button onClick={() => { setCurrentView('dashboard'); setActiveDashboardTab('logs'); }} className={`${navButtonClasses} ${currentView === 'dashboard' && activeDashboardTab === 'logs' ? activeClasses : inactiveClasses}`}>
-                            <ActivityIcon className="w-4 h-4 mr-2" /> System Logs
-                        </button>
-                    </>
-                ) : user.role === 'owner' ? (
-                     <>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('overview'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'overview' ? activeClasses : inactiveClasses}`}>
-                             <HomeIcon className="w-4 h-4 mr-2" /> Overview
-                        </button>
-                        <button onClick={() => setCurrentView('search')} className={`${navButtonClasses} ${currentView === 'search' ? activeClasses : inactiveClasses}`}>
-                            <UsersIcon className="w-4 h-4 mr-2" /> Patient View
-                        </button>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('medicineOrders'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'medicineOrders' ? activeClasses : inactiveClasses}`}>
-                            <ShoppingBagIcon className="w-4 h-4 mr-2" /> Medicine Orders
-                        </button>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('testBookings'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'testBookings' ? activeClasses : inactiveClasses}`}>
-                            <BeakerIcon className="w-4 h-4 mr-2" /> Test Bookings
-                        </button>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('users'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'users' ? activeClasses : inactiveClasses}`}>
-                             <UsersIcon className="w-4 h-4 mr-2" /> Users
-                        </button>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('doctors'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'doctors' ? activeClasses : inactiveClasses}`}>
-                             <StethoscopeIcon className="w-4 h-4 mr-2" /> Doctors
-                        </button>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('medicines'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'medicines' ? activeClasses : inactiveClasses}`}>
-                            <PillIcon className="w-4 h-4 mr-2" /> Medicines
-                        </button>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('labTests'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'labTests' ? activeClasses : inactiveClasses}`}>
-                            <TestTubeIcon className="w-4 h-4 mr-2" /> Lab Tests
-                        </button>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('appointments'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'appointments' ? activeClasses : inactiveClasses}`}>
-                             <CalendarIcon className="w-4 h-4 mr-2" /> Appointments
-                        </button>
-                        <button onClick={() => { setCurrentView('ownerDashboard'); setActiveDashboardTab('logs'); }} className={`${navButtonClasses} ${currentView === 'ownerDashboard' && activeDashboardTab === 'logs' ? activeClasses : inactiveClasses}`}>
-                             <ActivityIcon className="w-4 h-4 mr-2" /> System Logs
-                        </button>
-                    </>
                 ) : null}
               </nav>
 
@@ -229,7 +163,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                     </button>
 
                     {isMenuOpen && (
-                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-20 border dark:border-gray-700 animate-fade-in-fast">
+                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-20 border dark:border-gray-700 animate-fade-in-fast">
                             <button
                                 onClick={() => { setCurrentView('profile'); setIsMenuOpen(false); }}
                                 className={`flex items-center w-full text-left px-4 py-2 text-sm ${currentView === 'profile' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200' : 'text-gray-700 dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
@@ -245,6 +179,13 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                                 Order History
                             </button>
                             <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+                            <button
+                                onClick={() => { logout(); setIsMenuOpen(false); }}
+                                className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            >
+                                <LogInIcon className="w-4 h-4 mr-3" />
+                                Switch Account
+                            </button>
                             <button
                                 onClick={() => { logout(); setIsMenuOpen(false); }}
                                 className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -381,10 +322,15 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                             </>
                         )}
                     </div>
-                    <div className="mt-auto pt-4 border-t dark:border-gray-700 space-y-2">
-                        <button onClick={() => { setCurrentView('profile'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'profile' ? mobileActiveClasses : mobileInactiveClasses}`}><UserIcon className="w-5 h-5 mr-3" /> My Profile</button>
-                        <button onClick={() => { setCurrentView('orderHistory'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'orderHistory' ? mobileActiveClasses : mobileInactiveClasses}`}><ArchiveIcon className="w-5 h-5 mr-3" /> Order History</button>
-                        <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-md text-base flex items-center text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"><LogOutIcon className="w-5 h-5 mr-3" /> Logout</button>
+                    <div className="mt-auto pt-4 border-t dark:border-gray-700">
+                        <div className="space-y-2 pb-2">
+                            <button onClick={() => { setCurrentView('profile'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'profile' ? mobileActiveClasses : mobileInactiveClasses}`}><UserIcon className="w-5 h-5 mr-3" /> My Profile</button>
+                            <button onClick={() => { setCurrentView('orderHistory'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'orderHistory' ? mobileActiveClasses : mobileInactiveClasses}`}><ArchiveIcon className="w-5 h-5 mr-3" /> Order History</button>
+                        </div>
+                        <div className="border-t border-gray-200 dark:border-gray-600 pt-2 space-y-1">
+                            <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-md text-base flex items-center text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"><LogInIcon className="w-5 h-5 mr-3" /> Switch Account</button>
+                            <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-md text-base flex items-center text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"><LogOutIcon className="w-5 h-5 mr-3" /> Logout</button>
+                        </div>
                     </div>
                 </nav>
             </div>
