@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DoctorCard from './components/DoctorCard';
@@ -206,11 +205,6 @@ const App: React.FC = () => {
     setSelectedBookingInfo({ date, slot });
   };
   
-  const handleBotBookAppointment = (doctor: Doctor, slot: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    handleSelectSlot(doctor, today, slot);
-  };
-
   const handleSelectLabTest = (test: LabTest) => {
     setBookingLabTest(test);
   };
@@ -270,7 +264,12 @@ const App: React.FC = () => {
         return <UserProfile user={user} addresses={addresses} appointments={userAppointments} onDataRefresh={refreshData} />;
     }
     if (currentView === 'orderHistory' && user) {
-        return <OrderHistoryView medicineOrders={medicineOrders} labTestBookings={labTestBookings} initialTab={activeOrderHistoryTab} />;
+        return <OrderHistoryView 
+            medicineOrders={medicineOrders} 
+            labTestBookings={labTestBookings} 
+            activeTab={activeOrderHistoryTab} 
+            setActiveTab={setActiveOrderHistoryTab}
+        />;
     }
     if (currentView === 'appointmentHistory') {
         return <AppointmentHistoryView appointments={userAppointments} />;
@@ -498,8 +497,9 @@ const App: React.FC = () => {
         labTests={labTests}
         appointments={userAppointments}
         labTestBookings={labTestBookings}
-        onBookAppointment={handleBotBookAppointment}
         onBookLabTest={handleSelectLabTest}
+        onShowAvailability={setViewingAvailabilityForDoctor}
+        onViewDoctorDetails={setViewingDoctor}
         setCurrentView={setCurrentView}
         onStartVideoCall={handleStartVideoCall}
         newMessage={botMessage}

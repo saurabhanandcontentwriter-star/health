@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { MedicineOrder, LabTestBooking } from '../types';
 import { MedicineOrderTracker, LabTestBookingTracker } from './OrderTrackers';
 import { ArchiveIcon, TestTubeIcon, ShoppingBagIcon, FileTextIcon } from './IconComponents';
@@ -6,22 +6,15 @@ import { ArchiveIcon, TestTubeIcon, ShoppingBagIcon, FileTextIcon } from './Icon
 interface OrderHistoryViewProps {
     medicineOrders: MedicineOrder[];
     labTestBookings: LabTestBooking[];
-    initialTab?: 'medicines' | 'labTests';
+    activeTab: 'medicines' | 'labTests';
+    setActiveTab: (tab: 'medicines' | 'labTests') => void;
 }
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 };
 
-const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, labTestBookings, initialTab }) => {
-    const [activeTab, setActiveTab] = useState<'medicines' | 'labTests'>(initialTab || 'medicines');
-    
-    useEffect(() => {
-        if (initialTab) {
-            setActiveTab(initialTab);
-        }
-    }, [initialTab]);
-
+const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, labTestBookings, activeTab, setActiveTab }) => {
     const sortedMedicineOrders = [...medicineOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
     const sortedLabTestBookings = [...labTestBookings].sort((a, b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
 

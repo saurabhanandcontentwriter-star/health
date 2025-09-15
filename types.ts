@@ -1,4 +1,5 @@
 
+
 export interface User {
     id: number;
     firstName: string;
@@ -196,5 +197,6 @@ export interface Message {
     text: string;
     timestamp?: string; // ISO string for when the message was created
     doctors?: Doctor[];
+    labTests?: LabTest[];
     videoCallWith?: Doctor;
 }

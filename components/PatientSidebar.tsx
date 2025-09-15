@@ -14,7 +14,7 @@ const PatientSidebar: React.FC<PatientSidebarProps> = ({ activeView, setCurrentV
         { name: 'My Profile', view: 'profile', icon: UserIcon, tab: null },
         { name: 'My Appointments', view: 'appointmentHistory', icon: FileTextIcon, tab: null },
         { name: 'Medicine Orders', view: 'orderHistory', icon: ClipboardCheckIcon, tab: 'medicines' },
-        { name: 'Test Bookings', view: 'orderHistory', icon: TestTubeIcon, tab: 'testBookings' },
+        { name: 'Test Bookings', view: 'orderHistory', icon: TestTubeIcon, tab: 'labTests' },
     ];
     
     const NavLink: React.FC<{ name: string, view: string, tab: string | null, icon: React.FC<{className?: string}> }> = ({ name, view, tab, icon: Icon }) => {

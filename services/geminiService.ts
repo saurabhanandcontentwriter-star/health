@@ -99,7 +99,7 @@ export const generateContentWithImage = async (prompt: string, imageBase64: stri
 };
 
 
-export const startChat = (appointmentHistory: Appointment[] = [], labTestHistory: LabTestBooking[] = []): Chat | null => {
+export const startChat = (appointmentHistory: Appointment[] = [], labTestHistory: LabTestBooking[] = [], language: 'en' | 'hi' = 'en'): Chat | null => {
     const API_KEY = process.env.API_KEY;
 
     if (!API_KEY) {
@@ -127,6 +127,7 @@ export const startChat = (appointmentHistory: Appointment[] = [], labTestHistory
     
     const ai = new GoogleGenAI({ apiKey: API_KEY });
     const systemInstruction = `${historyContext ? `CONTEXT ABOUT THE USER:\n${historyContext}\n\n` : ''}You are a friendly and helpful AI Bot for Bihar Health Connect.
+You are bilingual and MUST respond in the language the user is using (English or Hindi).
 Your goal is to assist users with health inquiries, finding doctors, booking lab tests, and ordering medicines. You can now also analyze images.
 
 **IMPORTANT**: Use the provided user context (appointment and lab test history) to give more personalized and relevant responses. For example, if a user mentions symptoms similar to a past appointment, you can acknowledge their history (e.g., "I see you had an appointment for a similar issue before..."). This makes your assistance more helpful.
@@ -158,9 +159,9 @@ Here's how you should handle different requests:
     - For PDF medical reports, extract key findings, abnormal values, and provide a simple explanation. IMPORTANT: always conclude with a disclaimer that you are an AI and the user should consult a real doctor for medical advice.
 
 **General Rules**:
-- You MUST ONLY use the structured commands above when you have the required information. Do not add any conversational text before or after the command.
-- If you need more information, ask clarifying questions.
-- For general health questions, answer conversationally.
+- **CRITICAL**: The structured commands above (like \`SEARCH_DOCTORS\`) MUST ALWAYS be in English, even if the conversation is in Hindi. Do not add any conversational text before or after the command.
+- If you need more information, ask clarifying questions in the user's language.
+- For general health questions, answer conversationally in the user's language.
 - **IMPORTANT**: You are not a medical professional. Do not provide diagnoses or prescribe medication. Any health advice must be general and include a disclaimer to consult a real doctor.
 - You cannot handle payments. For any payment-related query, inform the user that payment will be handled securely within the app.`;
     
