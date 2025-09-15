@@ -33,6 +33,7 @@ const App: React.FC = () => {
   const { isAuthenticated, user, authLogs, logout } = useAuth();
   const [currentView, setCurrentView] = useState<'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests' | 'appointmentHistory' | 'profile' | 'orderHistory'>('search');
   const [activeDashboardTab, setActiveDashboardTab] = useState<string>('overview');
+  const [activeOrderHistoryTab, setActiveOrderHistoryTab] = useState<'medicines' | 'labTests'>('medicines');
   
   const [users, setUsers] = useState<User[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -269,7 +270,7 @@ const App: React.FC = () => {
         return <UserProfile user={user} addresses={addresses} appointments={userAppointments} onDataRefresh={refreshData} />;
     }
     if (currentView === 'orderHistory' && user) {
-        return <OrderHistoryView medicineOrders={medicineOrders} labTestBookings={labTestBookings} />;
+        return <OrderHistoryView medicineOrders={medicineOrders} labTestBookings={labTestBookings} initialTab={activeOrderHistoryTab} />;
     }
     if (currentView === 'appointmentHistory') {
         return <AppointmentHistoryView appointments={userAppointments} />;
@@ -402,6 +403,8 @@ const App: React.FC = () => {
         setActiveDashboardTab={setActiveDashboardTab}
         notifications={notificationReminders}
         onDismissNotification={handleDismissNotification}
+        activeOrderHistoryTab={activeOrderHistoryTab}
+        setActiveOrderHistoryTab={setActiveOrderHistoryTab}
       />
       <div className="relative flex">
          {isAdminOrOwner && isDashboardView && (
@@ -417,6 +420,8 @@ const App: React.FC = () => {
              <PatientSidebar 
                 activeView={currentView}
                 setCurrentView={setCurrentView as any}
+                activeOrderHistoryTab={activeOrderHistoryTab}
+                setActiveOrderHistoryTab={setActiveOrderHistoryTab}
              />
         )}
         <main className={`w-full transition-all duration-300 ${(isAdminOrOwner && isDashboardView) || isPatientDashboardView ? 'lg:pl-64' : ''}`}>

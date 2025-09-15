@@ -1,9 +1,10 @@
 
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
-import { ShoppingBagIcon, TestTubeIcon, StethoscopeIcon, FileTextIcon, UserIcon, ChevronDownIcon, ArchiveIcon, LogOutIcon, LogInIcon, HomeIcon, TruckIcon, PillIcon, UsersIcon, CalendarIcon, ActivityIcon, BeakerIcon, MenuIcon, XIcon, BellIcon, ClockIcon } from './IconComponents';
+import { ShoppingBagIcon, TestTubeIcon, StethoscopeIcon, FileTextIcon, UserIcon, ChevronDownIcon, LogOutIcon, LogInIcon, HomeIcon, TruckIcon, PillIcon, UsersIcon, CalendarIcon, ActivityIcon, BeakerIcon, MenuIcon, XIcon, BellIcon, ClockIcon, ClipboardCheckIcon } from './IconComponents';
 import WeatherWidget from './WeatherWidget';
 import ThemeToggle from './ThemeToggle';
 import { Appointment } from '../types';
@@ -16,9 +17,11 @@ interface HeaderProps {
   setActiveDashboardTab: (tab: string) => void;
   notifications: Appointment[];
   onDismissNotification: (id: number) => void;
+  activeOrderHistoryTab: 'medicines' | 'labTests';
+  setActiveOrderHistoryTab: (tab: 'medicines' | 'labTests') => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDashboardTab, setActiveDashboardTab, notifications, onDismissNotification }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDashboardTab, setActiveDashboardTab, notifications, onDismissNotification, activeOrderHistoryTab, setActiveOrderHistoryTab }) => {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -172,11 +175,20 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                                 My Profile
                             </button>
                             <button
-                                onClick={() => { setCurrentView('orderHistory'); setIsMenuOpen(false); }}
-                                className={`flex items-center w-full text-left px-4 py-2 text-sm ${currentView === 'orderHistory' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200' : 'text-gray-700 dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+                                onClick={() => { setCurrentView('orderHistory'); setActiveOrderHistoryTab('medicines'); setIsMenuOpen(false); }}
+                                className={`flex items-center w-full text-left px-4 py-2 text-sm ${currentView === 'orderHistory' && activeOrderHistoryTab === 'medicines' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200' : 'text-gray-700 dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
                             >
-                                <ArchiveIcon className="w-4 h-4 mr-3" />
-                                Order History
+                                <ClipboardCheckIcon className="w-4 h-4 mr-3" />
+                                Medicine Orders
+                            </button>
+                             <button
+// FIX: Changed 'testBookings' to 'labTests' to match the expected type.
+                                onClick={() => { setCurrentView('orderHistory'); setActiveOrderHistoryTab('labTests'); setIsMenuOpen(false); }}
+// FIX: Changed 'testBookings' to 'labTests' to match the expected type.
+                                className={`flex items-center w-full text-left px-4 py-2 text-sm ${currentView === 'orderHistory' && activeOrderHistoryTab === 'labTests' ? 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200' : 'text-gray-700 dark:text-gray-300'} hover:bg-gray-100 dark:hover:bg-gray-700`}
+                            >
+                                <TestTubeIcon className="w-4 h-4 mr-3" />
+                                Test Bookings
                             </button>
                             <div className="border-t border-gray-100 dark:border-gray-700 my-1"></div>
                             <button
@@ -325,7 +337,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                     <div className="mt-auto pt-4 border-t dark:border-gray-700">
                         <div className="space-y-2 pb-2">
                             <button onClick={() => { setCurrentView('profile'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'profile' ? mobileActiveClasses : mobileInactiveClasses}`}><UserIcon className="w-5 h-5 mr-3" /> My Profile</button>
-                            <button onClick={() => { setCurrentView('orderHistory'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'orderHistory' ? mobileActiveClasses : mobileInactiveClasses}`}><ArchiveIcon className="w-5 h-5 mr-3" /> Order History</button>
+                            <button onClick={() => { setCurrentView('orderHistory'); setActiveOrderHistoryTab('medicines'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'orderHistory' && activeOrderHistoryTab === 'medicines' ? mobileActiveClasses : mobileInactiveClasses}`}><ClipboardCheckIcon className="w-5 h-5 mr-3" /> Medicine Orders</button>
+                            <button onClick={() => { setCurrentView('orderHistory'); setActiveOrderHistoryTab('labTests'); setIsMobileMenuOpen(false); }} className={`${mobileNavButtonClasses} ${currentView === 'orderHistory' && activeOrderHistoryTab === 'labTests' ? mobileActiveClasses : mobileInactiveClasses}`}><TestTubeIcon className="w-5 h-5 mr-3" /> Test Bookings</button>
                         </div>
                         <div className="border-t border-gray-200 dark:border-gray-600 pt-2 space-y-1">
                             <button onClick={() => { logout(); setIsMobileMenuOpen(false); }} className="w-full text-left px-4 py-3 rounded-md text-base flex items-center text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"><LogInIcon className="w-5 h-5 mr-3" /> Switch Account</button>
