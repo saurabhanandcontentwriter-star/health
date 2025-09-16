@@ -141,7 +141,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
             setMessages(prev => [...prev, { role: 'model', text: response.text, timestamp: new Date().toISOString() }]);
         } catch (error) {
             console.error("Error analyzing face scan:", error);
-            setMessages(prev => [...prev, { role: 'model', text: "Sorry, I couldn't analyze the image. Please try again.", timestamp: new Date().toISOString() }]);
+            const errorMessage = error instanceof Error ? error.message : "Sorry, I couldn't analyze the image. Please try again.";
+            setMessages(prev => [...prev, { role: 'model', text: errorMessage, timestamp: new Date().toISOString() }]);
         } finally {
             setIsLoading(false);
         }
@@ -285,7 +286,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
             }
         } catch (error) {
             console.error("Error sending message:", error);
-            setMessages(prev => [...prev, { role: 'model', text: "Sorry, something went wrong. Please try again.", timestamp: new Date().toISOString() }]);
+            const errorMessage = error instanceof Error ? error.message : "Sorry, something went wrong. Please try again.";
+            setMessages(prev => [...prev, { role: 'model', text: errorMessage, timestamp: new Date().toISOString() }]);
         } finally {
             setIsLoading(false);
         }

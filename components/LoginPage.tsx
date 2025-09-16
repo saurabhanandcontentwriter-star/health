@@ -39,6 +39,11 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
     const handleGetOtp = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+
+        // --- Phone Number Verification Step ---
+        // Before generating an OTP, we verify the phone number against several checks.
+
+        // 1. Validate input format and captcha
         if (!/^\d{10}$/.test(phone)) {
             setError('Please enter a valid 10-digit phone number.');
             return;
@@ -52,6 +57,7 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
 
         setIsLoading(true);
         
+        // 2. Check if the user exists in the database
         const user = db.getUserByPhone(phone);
 
         if (!user) {
@@ -60,12 +66,14 @@ const LoginForm: React.FC<{ isAdmin?: boolean }> = ({ isAdmin = false }) => {
             return;
         }
 
+        // 3. For admin portal, ensure the user has the correct role
         if (isAdmin && user.role === 'patient') {
             setError('This phone number does not belong to an admin or owner account.');
             setIsLoading(false);
             return;
         }
         
+        // If all checks pass, proceed to simulate OTP generation
         const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
         setGeneratedOtp(newOtp);
         setStep('otp');

@@ -1,4 +1,5 @@
 
+
 import React, { useState, useMemo } from 'react';
 import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy, User, LabTest } from '../types';
 import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, PlusCircleIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon, RefundIcon, ShoppingBagIcon, BeakerIcon, TestTubeIcon } from './IconComponents';
@@ -30,11 +31,11 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color, darkColo
   </div>
 );
 
-export const formatCurrency = (amount: number) => {
+const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 };
 
-export const formatDuration = (seconds: number) => {
+const formatDuration = (seconds: number) => {
     if (seconds < 60) return `${seconds} sec`;
     const minutes = Math.floor(seconds / 60);
     const hours = Math.floor(minutes / 60);
@@ -52,7 +53,7 @@ interface AssignDeliveryModalProps {
     onAssign: (orderType: 'medicine' | 'lab', orderId: number, deliveryBoy: DeliveryBoy) => void;
 }
 
-export const AssignDeliveryModal: React.FC<AssignDeliveryModalProps> = ({ orderId, orderType, onClose, onAssign }) => {
+const AssignDeliveryModal: React.FC<AssignDeliveryModalProps> = ({ orderId, orderType, onClose, onAssign }) => {
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [error, setError] = useState('');
@@ -197,14 +198,14 @@ const RevenueChart: React.FC<{ data: { month: string; revenue: number }[] }> = (
 
 
 // --- Sub-components for each tab ---
-export interface OverviewViewProps {
+interface OverviewViewProps {
     appointments: Appointment[];
     doctors: Doctor[];
     sessions: UserSession[];
     allMedicineOrders: MedicineOrder[];
     allLabTestBookings: LabTestBooking[];
 }
-export const OverviewView: React.FC<OverviewViewProps> = 
+const OverviewView: React.FC<OverviewViewProps> = 
 ({ appointments, doctors, sessions, allMedicineOrders, allLabTestBookings }) => {
     const [qrAmount, setQrAmount] = useState('500');
     const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -489,29 +490,33 @@ export const OverviewView: React.FC<OverviewViewProps> =
     );
 };
 
-export interface MedicineOrdersViewProps {
+interface MedicineOrdersViewProps {
     allMedicineOrders: MedicineOrder[];
     refreshData: () => void;
 }
-export const MedicineOrdersView: React.FC<MedicineOrdersViewProps> = ({ allMedicineOrders, refreshData }) => {
+const MedicineOrdersView: React.FC<MedicineOrdersViewProps> = ({ allMedicineOrders, refreshData }) => {
     const [assignModal, setAssignModal] = useState<{ isOpen: boolean; orderId: number | null }>({ isOpen: false, orderId: null });
+    const [error, setError] = useState<string | null>(null);
 
     const handleUpdateStatus = (orderId: number, newStatus: MedicineOrder['status']) => {
+        setError(null);
         try {
             db.updateMedicineOrderStatus(orderId, newStatus);
             refreshData();
-        } catch (error) {
-            alert("Could not update status.");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not update status.");
         }
     };
 
     const handleAssignDelivery = (orderType: 'medicine' | 'lab', orderId: number, deliveryBoy: DeliveryBoy) => {
+        setError(null);
         try {
             db.assignDeliveryInfo(orderType, orderId, deliveryBoy);
             setAssignModal({ isOpen: false, orderId: null });
             refreshData();
-        } catch (error) {
-            alert('Failed to assign delivery person.');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to assign delivery person.');
+            setAssignModal({ isOpen: false, orderId: null });
         }
     };
 
@@ -530,6 +535,12 @@ export const MedicineOrdersView: React.FC<MedicineOrdersViewProps> = ({ allMedic
                     <ShoppingBagIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
                     <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Medicine Orders</h3>
                 </div>
+                {error && (
+                    <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                )}
                 <div className="overflow-x-auto max-h-[60vh]">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
@@ -575,30 +586,33 @@ export const MedicineOrdersView: React.FC<MedicineOrdersViewProps> = ({ allMedic
     );
 };
 
-export interface TestBookingsViewProps {
+interface TestBookingsViewProps {
     allLabTestBookings: LabTestBooking[];
     refreshData: () => void;
 }
-export const TestBookingsView: React.FC<TestBookingsViewProps> = ({ allLabTestBookings, refreshData }) => {
+const TestBookingsView: React.FC<TestBookingsViewProps> = ({ allLabTestBookings, refreshData }) => {
     const [assignModal, setAssignModal] = useState<{ isOpen: boolean; orderId: number | null }>({ isOpen: false, orderId: null });
+    const [error, setError] = useState<string | null>(null);
   
     const handleUpdateStatus = (bookingId: number, newStatus: LabTestBooking['status']) => {
+        setError(null);
         try {
             db.updateLabTestBookingStatus(bookingId, newStatus);
             refreshData();
-        } catch (error) {
-            console.error("Failed to update status:", error);
-            alert("Could not update the booking status.");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not update the booking status.");
         }
     };
   
     const handleAssignDelivery = (orderType: 'medicine' | 'lab', orderId: number, deliveryBoy: DeliveryBoy) => {
+        setError(null);
         try {
             db.assignDeliveryInfo(orderType, orderId, deliveryBoy);
             setAssignModal({ isOpen: false, orderId: null });
             refreshData();
-        } catch (error) {
-            alert('Failed to assign delivery person.');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to assign phlebotomist.');
+            setAssignModal({ isOpen: false, orderId: null });
         }
     };
 
@@ -617,6 +631,12 @@ export const TestBookingsView: React.FC<TestBookingsViewProps> = ({ allLabTestBo
                     <BeakerIcon className="h-6 w-6 text-teal-600 dark:text-teal-400" />
                     <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Lab Test Bookings</h3>
                 </div>
+                {error && (
+                    <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                )}
                 <div className="overflow-x-auto max-h-[60vh]">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                         <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
@@ -662,11 +682,11 @@ export const TestBookingsView: React.FC<TestBookingsViewProps> = ({ allLabTestBo
     );
 };
 
-export interface DoctorsViewProps {
+interface DoctorsViewProps {
     doctors: Doctor[];
     refreshData: () => void;
 }
-export const DoctorsView: React.FC<DoctorsViewProps> = ({ doctors, refreshData }) => {
+const DoctorsView: React.FC<DoctorsViewProps> = ({ doctors, refreshData }) => {
     const [editingDoctor, setEditingDoctor] = useState<Doctor | null>(null);
     const [isDoctorFormOpen, setIsDoctorFormOpen] = useState(false);
 
@@ -722,11 +742,11 @@ export const DoctorsView: React.FC<DoctorsViewProps> = ({ doctors, refreshData }
     );
 };
 
-export interface MedicinesViewProps {
+interface MedicinesViewProps {
     medicines: Medicine[];
     refreshData: () => void;
 }
-export const MedicinesView: React.FC<MedicinesViewProps> = ({ medicines, refreshData }) => {
+const MedicinesView: React.FC<MedicinesViewProps> = ({ medicines, refreshData }) => {
     const [editingMedicine, setEditingMedicine] = useState<Medicine | null>(null);
     const [isMedicineFormOpen, setIsMedicineFormOpen] = useState(false);
 
@@ -782,11 +802,11 @@ export const MedicinesView: React.FC<MedicinesViewProps> = ({ medicines, refresh
     );
 };
 
-export interface LabTestsManagementViewProps {
+interface LabTestsManagementViewProps {
     labTests: LabTest[];
     refreshData: () => void;
 }
-export const LabTestsManagementView: React.FC<LabTestsManagementViewProps> = ({ labTests, refreshData }) => {
+const LabTestsManagementView: React.FC<LabTestsManagementViewProps> = ({ labTests, refreshData }) => {
     const [editingTest, setEditingTest] = useState<LabTest | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
 
@@ -844,11 +864,12 @@ export const LabTestsManagementView: React.FC<LabTestsManagementViewProps> = ({ 
     );
 };
 
-export interface AppointmentsViewProps {
+interface AppointmentsViewProps {
     appointments: Appointment[];
     refreshData: () => void;
 }
-export const AppointmentsView: React.FC<AppointmentsViewProps> = ({ appointments, refreshData }) => {
+const AppointmentsView: React.FC<AppointmentsViewProps> = ({ appointments, refreshData }) => {
+    const [error, setError] = useState<string | null>(null);
     const sortedAppointments = [...appointments].sort((a, b) => {
          const dateA = new Date(a.appointment_date).getTime();
          const dateB = new Date(b.appointment_date).getTime();
@@ -856,18 +877,24 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({ appointments
     });
 
     const handleUpdateStatus = (appointmentId: number, newStatus: Appointment['status']) => {
+        setError(null);
         try {
             db.updateAppointmentStatus(appointmentId, newStatus);
             refreshData();
-        } catch (error) {
-            console.error("Failed to update status:", error);
-            alert("Could not update the appointment status.");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not update the appointment status.");
         }
     };
 
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">All Appointments</h3>
+            {error && (
+                <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                    <span>{error}</span>
+                </div>
+            )}
             <div className="overflow-x-auto max-h-[60vh]">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0">
@@ -909,11 +936,11 @@ export const AppointmentsView: React.FC<AppointmentsViewProps> = ({ appointments
     );
 };
 
-export interface LogsViewProps {
+interface LogsViewProps {
     authLogs: AuthLog[];
     sessions: UserSession[];
 }
-export const LogsView: React.FC<LogsViewProps> = ({ authLogs, sessions }) => {
+const LogsView: React.FC<LogsViewProps> = ({ authLogs, sessions }) => {
     return (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">

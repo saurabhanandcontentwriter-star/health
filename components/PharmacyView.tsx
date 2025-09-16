@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Medicine, MedicineOrder, User, Address } from '../types';
-import { ShoppingBagIcon, ArchiveIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon, HeartIcon, FileTextIcon } from './IconComponents';
+import { ShoppingBagIcon, ArchiveIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon, HeartIcon, FileTextIcon, XCircleIcon, QrCodeIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import AddressEditor from './AddressEditor';
@@ -325,6 +325,12 @@ const CheckoutView: React.FC<{
                             </button>
                         )}
                     </div>
+                    {error && (
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                    )}
                     <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
                         <button onClick={onBackToCart} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">Back to Cart</button>
                         <button onClick={handleProceedToPayment} disabled={isLoading || isAddingNewAddress} className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-400">
@@ -338,7 +344,14 @@ const CheckoutView: React.FC<{
                     <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Complete Your Payment</h2>
                     <p className="text-gray-600 dark:text-gray-400 mb-4">Pay <span className="font-bold">{formatCurrency(totalAmount)}</span> to confirm your order.</p>
                      <div className="p-4 my-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 h-64 w-64 flex items-center justify-center">
-                        {qrCodeUrl ? <img src={qrCodeUrl} alt="Payment QR Code" className="w-56 h-56 object-contain" /> : <p className="text-red-500">{error || "Generating QR..."}</p> }
+                        {qrCodeUrl ? (
+                             <img src={qrCodeUrl} alt="Payment QR Code" className="w-56 h-56 object-contain" />
+                        ) : (
+                            <div className="flex flex-col items-center text-center p-4">
+                                <QrCodeIcon className="h-12 w-12 text-gray-400" />
+                                <p className="text-red-500 text-sm mt-2">{error || "Generating QR..."}</p>
+                            </div>
+                        )}
                     </div>
                      <p className="text-xs text-gray-500 dark:text-gray-400">Scan with any UPI app</p>
                     <div className="flex justify-center space-x-4 pt-6 w-full">
@@ -347,6 +360,12 @@ const CheckoutView: React.FC<{
                             {isLoading ? 'Confirming...' : "I've Paid, Confirm"}
                         </button>
                     </div>
+                    {error && qrCodeUrl && (
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300 w-full">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                    )}
                 </div>
             )}
              {step === 'confirmed' && (
