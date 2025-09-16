@@ -189,8 +189,8 @@ const App: React.FC = () => {
     setFilteredDoctors(results);
   };
 
-  const handleBookAppointment = useCallback(async (data: AppointmentIn) => {
-    await db.bookAppointment(data);
+  const handleBookAppointment = useCallback(async (data: AppointmentIn): Promise<Appointment> => {
+    const newAppointment = await db.bookAppointment(data);
     refreshData();
     const doctor = doctors.find(d => d.id === data.doctor_id);
     if (doctor) {
@@ -199,7 +199,19 @@ const App: React.FC = () => {
             text: `Great news! Your appointment with Dr. ${doctor.name} for ${data.appointment_time} on ${new Date(data.appointment_date + 'T00:00:00').toLocaleDateString()} is confirmed.`
         });
     }
+    return newAppointment;
   }, [refreshData, doctors]);
+
+  const handleCancelAppointment = useCallback((appointmentId: number) => {
+    try {
+        db.updateAppointmentStatus(appointmentId, 'Cancelled');
+        refreshData();
+        // You could add a success toast notification here if desired
+    } catch (error) {
+        console.error("Failed to cancel appointment:", error);
+        // You could add an error toast notification here if desired
+    }
+  }, [refreshData]);
 
   const handleSelectSlot = (doctor: Doctor, date: string, slot: string) => {
     setBookingDoctor(doctor);
@@ -273,7 +285,7 @@ const App: React.FC = () => {
         />;
     }
     if (currentView === 'appointmentHistory') {
-        return <AppointmentHistoryView appointments={userAppointments} />;
+        return <AppointmentHistoryView appointments={userAppointments} onCancelAppointment={handleCancelAppointment} />;
     }
     if (currentView === 'labTests' && user) {
         return <LabTestsView tests={labTests} bookings={labTestBookings} user={user} addresses={addresses} onBookTest={handleBookLabTest} onDataRefresh={refreshData} />;
@@ -435,9 +447,9 @@ const App: React.FC = () => {
         <DoctorDetailModal
           doctor={viewingDoctor}
           onClose={() => setViewingDoctor(null)}
-          onBookSlot={(doctor) => {
-            setViewingDoctor(null);
-            setViewingAvailabilityForDoctor(doctor);
+          onSelectSlot={(date, slot) => {
+              handleSelectSlot(viewingDoctor, date, slot);
+              setViewingDoctor(null);
           }}
           onVideoCall={(doctor) => {
             setViewingDoctor(null);

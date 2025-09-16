@@ -199,4 +199,6 @@ export interface Message {
     doctors?: Doctor[];
     labTests?: LabTest[];
     videoCallWith?: Doctor;
+    type?: 'wellness_scan_result';
+    status?: 'loading' | 'complete' | 'error';
 }

@@ -208,7 +208,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
               
               {/* Mobile Menu Button */}
               <div className="lg:hidden flex items-center space-x-2">
-                  <div className="relative">
+                  <div className="relative" ref={notificationRef}>
                      <button 
                         onClick={() => setIsNotificationsOpen(o => !o)} 
                         className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative"
@@ -220,7 +220,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                         )}
                     </button>
                     {isNotificationsOpen && (
-                        <div ref={notificationRef} className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-20 border dark:border-gray-700 animate-fade-in-fast">
+                        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-20 border dark:border-gray-700 animate-fade-in-fast">
                              <div className="p-3 border-b dark:border-gray-700 flex justify-between items-center">
                                 <h3 className="font-semibold text-gray-800 dark:text-gray-100">Notifications</h3>
                                 <button onClick={() => setIsNotificationsOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">

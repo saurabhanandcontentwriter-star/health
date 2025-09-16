@@ -1,8 +1,56 @@
+// FIX: Add types for SpeechRecognition API which is not part of standard DOM library
+// This will resolve errors about SpeechRecognition not being found.
+interface SpeechRecognitionEvent extends Event {
+    readonly resultIndex: number;
+    readonly results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+    readonly length: number;
+    item(index: number): SpeechRecognitionResult;
+    [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+    readonly isFinal: boolean;
+    readonly length: number;
+    item(index: number): SpeechRecognitionAlternative;
+    [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+    readonly transcript: string;
+    readonly confidence: number;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+    readonly error: any;
+}
+
+interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onresult: (event: SpeechRecognitionEvent) => void;
+    onstart: () => void;
+    onend: () => void;
+    onerror: (event: SpeechRecognitionErrorEvent) => void;
+    start(): void;
+    stop(): void;
+}
+
+declare global {
+    interface Window {
+        SpeechRecognition: { new(): SpeechRecognition };
+        webkitSpeechRecognition: { new(): SpeechRecognition };
+    }
+}
+
 import React, { useState, useEffect, useRef } from 'react';
 import { startChat, generateContentWithImage } from '../services/geminiService';
 import type { Chat, GenerateContentResponse } from '@google/genai';
 import { Doctor, LabTest, Message, Appointment, LabTestBooking } from '../types';
-import { MinimizeIcon, SendIcon, BotIcon, StethoscopeIcon, MapPinIcon, PlusIcon, PaperclipIcon, ImageIcon, CameraIcon, XIcon, FileTextIcon, CalendarIcon } from './IconComponents';
+import { MinimizeIcon, SendIcon, BotIcon, StethoscopeIcon, MapPinIcon, PlusIcon, PaperclipIcon, ImageIcon, CameraIcon, XIcon, FileTextIcon, CalendarIcon, MicIcon, ThermometerIcon, RefreshCwIcon, XCircleIcon } from './IconComponents';
 import FaceScanModal from './FaceScanModal';
 
 const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
@@ -13,8 +61,9 @@ const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reje
 });
 
 const formatTimestamp = (isoString: string): string => {
-    if (!isoString) return '';
+    if (!isoString || isoString.includes('NaN')) return ''; // Guard against invalid timestamps
     const date = new Date(isoString);
+    if (isNaN(date.getTime())) return '';
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 };
 
@@ -49,6 +98,10 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
     const [showFaceScan, setShowFaceScan] = useState(false);
     
     const [language, setLanguage] = useState<'en' | 'hi' | null>(null);
+    
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
+
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
@@ -119,6 +172,58 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
         }
     }, [isOpen, language, messages.length, appointments, labTestBookings]);
 
+    useEffect(() => {
+        if (!isOpen || !language) return;
+
+        const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionAPI) {
+            console.warn("Speech Recognition API not supported in this browser.");
+            recognitionRef.current = null;
+            return;
+        }
+
+        const recognition = new SpeechRecognitionAPI();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+
+        recognition.onstart = () => {
+            setIsListening(true);
+        };
+        
+        recognition.onresult = (event) => {
+            const transcript = event.results[event.results.length - 1][0].transcript;
+            setInputValue(transcript);
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error", event.error);
+            setIsListening(false);
+        };
+
+        recognition.onend = () => {
+            setIsListening(false);
+        };
+
+        recognitionRef.current = recognition;
+
+        return () => {
+            recognition.stop();
+        };
+
+    }, [isOpen, language]);
+
+    const handleMicClick = () => {
+        if (!recognitionRef.current) return;
+        
+        if (isListening) {
+            recognitionRef.current.stop();
+        } else {
+            setInputValue('');
+            recognitionRef.current.start();
+        }
+    };
+
     const handleCopyMessage = (text: string, index: number) => {
         navigator.clipboard.writeText(text).then(() => {
             setCopiedMessageIndex(index);
@@ -131,18 +236,38 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
     const handleFaceScanCapture = async (imageBase64: string) => {
         setShowFaceScan(false);
         const userMessage: Message = { role: 'user', text: '[Wellness face scan attached]', timestamp: new Date().toISOString() };
-        setMessages(prev => [...prev, userMessage]);
+        
+        const uniqueId = new Date().toISOString() + Math.random();
+        const loadingMessage: Message = {
+            role: 'model',
+            text: 'Analyzing your wellness scan...',
+            timestamp: uniqueId,
+            type: 'wellness_scan_result',
+            status: 'loading'
+        };
+
+        setMessages(prev => [...prev, userMessage, loadingMessage]);
         setIsLoading(true);
 
         try {
             const prompt = "Analyze this image of a person's face for general, visible wellness indicators. Focus on aspects like skin health, signs of fatigue, and overall appearance. Do not provide any medical diagnosis or specific advice. Frame your response as general observations and recommend consulting a doctor for any health concerns.";
             const pureBase64 = imageBase64.split(',')[1]; 
             const response = await generateContentWithImage(prompt, pureBase64, 'image/jpeg');
-            setMessages(prev => [...prev, { role: 'model', text: response.text, timestamp: new Date().toISOString() }]);
+            
+            setMessages(prev => prev.map(msg =>
+                msg.timestamp === uniqueId
+                    ? { ...msg, status: 'complete', text: response.text }
+                    : msg
+            ));
         } catch (error) {
             console.error("Error analyzing face scan:", error);
             const errorMessage = error instanceof Error ? error.message : "Sorry, I couldn't analyze the image. Please try again.";
-            setMessages(prev => [...prev, { role: 'model', text: errorMessage, timestamp: new Date().toISOString() }]);
+            
+            setMessages(prev => prev.map(msg =>
+                msg.timestamp === uniqueId
+                    ? { ...msg, status: 'error', text: errorMessage }
+                    : msg
+            ));
         } finally {
             setIsLoading(false);
         }
@@ -308,6 +433,58 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
         setMessages([]);
         setLanguage(null);
     };
+
+    const handleRetryScan = () => {
+        setMessages(prev => prev.filter(m => m.status !== 'error'));
+        setShowFaceScan(true);
+    };
+
+    const WellnessScanMessageComponent: React.FC<{ msg: Message }> = ({ msg }) => {
+        switch (msg.status) {
+            case 'loading':
+                return (
+                    <div className="p-4 rounded-2xl bg-gray-200 dark:bg-gray-700 rounded-bl-none">
+                        <div className="flex items-center space-x-3">
+                            <svg className="animate-spin h-5 w-5 text-teal-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span className="text-sm text-gray-700 dark:text-gray-200">{msg.text}</span>
+                        </div>
+                    </div>
+                );
+            case 'complete':
+                return (
+                    <div className="p-4 rounded-2xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-bl-none">
+                        <div className="flex items-start space-x-3">
+                            <ThermometerIcon className="w-6 h-6 text-green-500 flex-shrink-0 mt-1" />
+                            <div>
+                                <h4 className="font-bold text-green-800 dark:text-green-200">Wellness Scan Summary</h4>
+                                <p className="text-sm text-gray-800 dark:text-gray-100 mt-1" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            case 'error':
+                return (
+                    <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-bl-none">
+                         <div className="flex items-start space-x-3">
+                            <XCircleIcon className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
+                            <div>
+                                <h4 className="font-bold text-red-800 dark:text-red-200">Analysis Failed</h4>
+                                <p className="text-sm text-gray-800 dark:text-gray-100 mt-1" style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
+                                <button onClick={handleRetryScan} className="mt-3 flex items-center px-3 py-1.5 bg-red-100 text-red-800 text-xs font-semibold rounded-lg hover:bg-red-200 transition-colors dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900">
+                                    <RefreshCwIcon className="w-4 h-4 mr-2" />
+                                    Retry Scan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
     
     return (
         <>
@@ -343,83 +520,99 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
                         <>
                             <div className="flex-1 p-4 overflow-y-auto bg-gray-50 dark:bg-gray-900">
                                 <div className="space-y-4">
-                                    {messages.map((msg, index) => (
-                                        <div key={index} className={`flex items-start gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                            {msg.role === 'model' && (
-                                                <img src="https://i.imgur.com/A42A42M.png" alt="BHC Assistant" className="w-8 h-8 rounded-full object-cover flex-shrink-0 self-start mt-1"/>
-                                            )}
-                                            <div className={`flex flex-col gap-1 w-full max-w-[320px] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                                <div 
-                                                    className={`relative flex flex-col p-0 rounded-2xl transition-all ${msg.role === 'user' ? 'bg-blue-500 rounded-br-none' : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'}`}
-                                                >
-                                                    <div 
-                                                        className="cursor-pointer active:scale-95"
-                                                        onClick={() => handleCopyMessage(msg.text, index)}
-                                                        title="Click to copy message"
-                                                        role="button"
-                                                        tabIndex={0}
-                                                    >
-                                                        {copiedMessageIndex === index && (
-                                                            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-0.5 rounded-md animate-fade-in-fast">
-                                                                Copied!
-                                                            </div>
-                                                        )}
-                                                        
-                                                        <p className={`text-sm p-3 ${msg.role === 'user' ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`} style={{ whiteSpace: 'pre-wrap' }}>
-                                                            {msg.text}
-                                                        </p>
+                                    {messages.map((msg, index) => {
+                                        if (msg.type === 'wellness_scan_result') {
+                                            return (
+                                                <div key={index} className="flex items-start gap-2.5 justify-start">
+                                                    <img src="https://i.imgur.com/A42A42M.png" alt="BHC Assistant" className="w-8 h-8 rounded-full object-cover flex-shrink-0 self-start mt-1"/>
+                                                    <div className="flex flex-col gap-1 w-full max-w-[320px]">
+                                                        <WellnessScanMessageComponent msg={msg} />
+                                                        <span className="text-xs text-gray-400 px-1">
+                                                            {formatTimestamp(msg.timestamp || '')}
+                                                        </span>
                                                     </div>
-                                                
-                                                    {msg.doctors && (
-                                                        <div className="space-y-2 p-2">
-                                                            {msg.doctors.map(doc => (
-                                                                <div key={doc.id} className="w-full text-left bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3">
-                                                                    <div className="flex items-start space-x-3">
-                                                                        <img src={doc.imageUrl} alt={doc.name} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
-                                                                        <div className="flex-grow text-left">
-                                                                            <p className="font-bold text-gray-800 dark:text-gray-100">{doc.name}</p>
-                                                                            <div className="flex items-center text-xs text-teal-600 dark:text-teal-400 mt-1">
-                                                                                <StethoscopeIcon className="w-3 h-3 mr-1.5"/> {doc.specialty}
-                                                                            </div>
-                                                                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                                                                <MapPinIcon className="w-3 h-3 mr-1.5"/> {doc.location}
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <div key={index} className={`flex items-start gap-2.5 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                {msg.role === 'model' && (
+                                                    <img src="https://i.imgur.com/A42A42M.png" alt="BHC Assistant" className="w-8 h-8 rounded-full object-cover flex-shrink-0 self-start mt-1"/>
+                                                )}
+                                                <div className={`flex flex-col gap-1 w-full max-w-[320px] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                                    <div 
+                                                        className={`relative flex flex-col p-0 rounded-2xl transition-all ${msg.role === 'user' ? 'bg-blue-500 rounded-br-none' : 'bg-gray-200 dark:bg-gray-700 rounded-bl-none'}`}
+                                                    >
+                                                        <div 
+                                                            className="cursor-pointer active:scale-95"
+                                                            onClick={() => handleCopyMessage(msg.text, index)}
+                                                            title="Click to copy message"
+                                                            role="button"
+                                                            tabIndex={0}
+                                                        >
+                                                            {copiedMessageIndex === index && (
+                                                                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-0.5 rounded-md animate-fade-in-fast">
+                                                                    Copied!
+                                                                </div>
+                                                            )}
+                                                            
+                                                            <p className={`text-sm p-3 ${msg.role === 'user' ? 'text-white' : 'text-gray-800 dark:text-gray-100'}`} style={{ whiteSpace: 'pre-wrap' }}>
+                                                                {msg.text}
+                                                            </p>
+                                                        </div>
+                                                    
+                                                        {msg.doctors && (
+                                                            <div className="space-y-2 p-2">
+                                                                {msg.doctors.map(doc => (
+                                                                    <div key={doc.id} className="w-full text-left bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3">
+                                                                        <div className="flex items-start space-x-3">
+                                                                            <img src={doc.imageUrl} alt={doc.name} className="w-12 h-12 rounded-full object-cover flex-shrink-0" />
+                                                                            <div className="flex-grow text-left">
+                                                                                <p className="font-bold text-gray-800 dark:text-gray-100">{doc.name}</p>
+                                                                                <div className="flex items-center text-xs text-teal-600 dark:text-teal-400 mt-1">
+                                                                                    <StethoscopeIcon className="w-3 h-3 mr-1.5"/> {doc.specialty}
+                                                                                </div>
+                                                                                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                                                    <MapPinIcon className="w-3 h-3 mr-1.5"/> {doc.location}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
+                                                                        <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+                                                                            <button onClick={(e) => { e.stopPropagation(); onViewDoctorDetails(doc); }} className="flex items-center justify-center text-xs font-semibold px-2 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md">
+                                                                                <FileTextIcon className="w-4 h-4 mr-1.5" /> Details
+                                                                            </button>
+                                                                            <button onClick={(e) => { e.stopPropagation(); onShowAvailability(doc); setIsOpen(false); }} className="flex items-center justify-center text-xs font-semibold px-2 py-1.5 bg-teal-600 text-white hover:bg-teal-700 rounded-md">
+                                                                                <CalendarIcon className="w-4 h-4 mr-1.5" /> Book
+                                                                            </button>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-                                                                        <button onClick={(e) => { e.stopPropagation(); onViewDoctorDetails(doc); }} className="flex items-center justify-center text-xs font-semibold px-2 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-md">
-                                                                            <FileTextIcon className="w-4 h-4 mr-1.5" /> Details
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                        {msg.labTests && (
+                                                            <div className="space-y-2 p-2">
+                                                                {msg.labTests.map(test => (
+                                                                    <div key={test.id} className="w-full text-left bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3 flex justify-between items-center">
+                                                                        <div>
+                                                                            <p className="font-bold text-gray-800 dark:text-gray-100">{test.name}</p>
+                                                                            <p className="text-sm font-semibold text-teal-600 dark:text-teal-400 mt-1">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(test.price)}</p>
+                                                                        </div>
+                                                                        <button onClick={() => onBookLabTest(test)} className="px-4 py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition-colors shadow-md">
+                                                                            Book Now
                                                                         </button>
-                                                                        <button onClick={(e) => { e.stopPropagation(); onShowAvailability(doc); setIsOpen(false); }} className="flex items-center justify-center text-xs font-semibold px-2 py-1.5 bg-teal-600 text-white hover:bg-teal-700 rounded-md">
-                                                                            <CalendarIcon className="w-4 h-4 mr-1.5" /> Book
-                                                                        </button>
                                                                     </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {msg.labTests && (
-                                                        <div className="space-y-2 p-2">
-                                                            {msg.labTests.map(test => (
-                                                                <div key={test.id} className="w-full text-left bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-3 flex justify-between items-center">
-                                                                    <div>
-                                                                        <p className="font-bold text-gray-800 dark:text-gray-100">{test.name}</p>
-                                                                        <p className="text-sm font-semibold text-teal-600 dark:text-teal-400 mt-1">{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(test.price)}</p>
-                                                                    </div>
-                                                                    <button onClick={() => onBookLabTest(test)} className="px-4 py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition-colors shadow-md">
-                                                                        Book Now
-                                                                    </button>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-xs text-gray-400 px-1">
+                                                        {formatTimestamp(msg.timestamp || '')}
+                                                    </span>
                                                 </div>
-                                                <span className="text-xs text-gray-400 px-1">
-                                                    {formatTimestamp(msg.timestamp || '')}
-                                                </span>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                      {isLoading && (
                                         <div className="flex items-end gap-2 justify-start">
                                             <img src="https://i.imgur.com/A42A42M.png" alt="BHC Assistant" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
@@ -445,9 +638,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
                                 <input type="file" ref={imageInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
                                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="application/pdf" />
 
-                                <div className="flex items-center gap-2">
+                                <div className="relative">
                                     {showAttachmentOptions && (
-                                        <div className="flex items-center gap-2 animate-fade-in-fast" >
+                                        <div className="absolute bottom-full left-0 mb-2 flex items-center gap-2 bg-white dark:bg-gray-700 p-2 rounded-lg shadow-lg animate-fade-in-fast" >
                                              <button type="button" onClick={() => { setShowFaceScan(true); setShowAttachmentOptions(false); }} className="p-2 text-gray-500 hover:text-teal-600 rounded-full hover:bg-gray-100 dark:text-gray-400 dark:hover:text-teal-400 dark:hover:bg-gray-700" aria-label="Scan face">
                                                 <CameraIcon className="w-6 h-6" />
                                             </button>
@@ -475,7 +668,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
                                         type="text"
                                         value={inputValue}
                                         onChange={(e) => setInputValue(e.target.value)}
-                                        placeholder={language === 'en' ? "Type a message..." : "एक संदेश लिखें..."}
+                                        placeholder={language === 'en' ? "Type or say something..." : "कुछ टाइप करें या बोलें..."}
                                         className="w-full px-4 py-2 bg-gray-100 rounded-full border border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                                         disabled={isLoading}
                                         onKeyDown={(e) => {
@@ -486,9 +679,25 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
                                     />
                                 </div>
 
-                                <button type="submit" disabled={(!inputValue.trim() && !selectedFile) || isLoading} className="bg-teal-600 text-white p-3 rounded-full shadow-sm hover:bg-teal-700 disabled:bg-teal-300 disabled:cursor-not-allowed transition-colors">
-                                    <SendIcon className="w-5 h-5" />
-                                </button>
+                                { (inputValue.trim() || selectedFile) ? (
+                                    <button type="submit" disabled={isLoading} className="bg-teal-600 text-white p-3 rounded-full shadow-sm hover:bg-teal-700 disabled:bg-teal-300 disabled:cursor-not-allowed transition-colors">
+                                        <SendIcon className="w-5 h-5" />
+                                    </button>
+                                ) : (
+                                    <button 
+                                        type="button" 
+                                        onClick={handleMicClick} 
+                                        disabled={!recognitionRef.current || isLoading}
+                                        className={`p-3 rounded-full transition-colors ${
+                                            isListening 
+                                            ? 'bg-red-500 text-white animate-pulse' 
+                                            : 'bg-teal-600 text-white hover:bg-teal-700 disabled:bg-gray-400 dark:disabled:bg-gray-600'
+                                        }`}
+                                        aria-label={isListening ? 'Stop listening' : 'Start voice input'}
+                                    >
+                                        <MicIcon className="w-5 h-5" />
+                                    </button>
+                                )}
                             </form>
                         </>
                     ) : (
