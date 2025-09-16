@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DoctorCard from './components/DoctorCard';
@@ -244,6 +242,14 @@ const App: React.FC = () => {
       setNotificationReminders(prev => prev.filter(r => r.id !== id));
   };
 
+  const handleDismissAllNotifications = () => {
+    const dismissed = JSON.parse(sessionStorage.getItem('dismissedNotifications') || '[]');
+    const allCurrentNotificationIds = notificationReminders.map(n => n.id);
+    const newDismissed = [...new Set([...dismissed, ...allCurrentNotificationIds])];
+    sessionStorage.setItem('dismissedNotifications', JSON.stringify(newDismissed));
+    setNotificationReminders([]);
+  };
+
   const clearFilters = () => {
       setLocation('');
       setSpecialty('');
@@ -415,6 +421,7 @@ const App: React.FC = () => {
         setActiveDashboardTab={setActiveDashboardTab}
         notifications={notificationReminders}
         onDismissNotification={handleDismissNotification}
+        onDismissAllNotifications={handleDismissAllNotifications}
         activeOrderHistoryTab={activeOrderHistoryTab}
         setActiveOrderHistoryTab={setActiveOrderHistoryTab}
       />

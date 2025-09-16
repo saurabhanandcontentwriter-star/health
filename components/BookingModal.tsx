@@ -99,9 +99,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
   };
 
   const handleConfirmBooking = async () => {
-    if (!window.confirm('Are you sure you want to book this appointment?')) {
-      return;
-    }
     setIsLoading(true);
     setError(''); // Clear previous errors
     if (!user) {
@@ -383,11 +380,12 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
         {confirmedAppointment && <p className="text-gray-600 dark:text-gray-400 mt-2">Your Appointment ID is: <span className="font-mono bg-gray-100 dark:bg-gray-700 p-1 rounded">BHC-{confirmedAppointment.id}</span></p>}
         <p className="text-gray-600 dark:text-gray-400 mt-2">A confirmation SMS has been sent to your registered mobile number.</p>
         <div className="flex justify-center space-x-4 mt-8">
-            <button onClick={handleDownloadReceipt} className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                Download Receipt
-            </button>
-            <button onClick={onClose} className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors">
+            <button onClick={onClose} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
                 Close
+            </button>
+            <button onClick={handleDownloadReceipt} className="inline-flex items-center px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors">
+                <FileTextIcon className="w-5 h-5 mr-2" />
+                Print / Save Receipt
             </button>
         </div>
       </div>

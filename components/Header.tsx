@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from './Logo';
@@ -17,29 +14,32 @@ interface HeaderProps {
   setActiveDashboardTab: (tab: string) => void;
   notifications: Appointment[];
   onDismissNotification: (id: number) => void;
+  onDismissAllNotifications: () => void;
   activeOrderHistoryTab: 'medicines' | 'labTests';
   setActiveOrderHistoryTab: (tab: 'medicines' | 'labTests') => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDashboardTab, setActiveDashboardTab, notifications, onDismissNotification, activeOrderHistoryTab, setActiveOrderHistoryTab }) => {
+const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDashboardTab, setActiveDashboardTab, notifications, onDismissNotification, onDismissAllNotifications, activeOrderHistoryTab, setActiveOrderHistoryTab }) => {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   
   const menuRef = useRef<HTMLDivElement>(null);
-  const notificationRef = useRef<HTMLDivElement>(null);
-
-  const navButtonClasses = "px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center";
-  const activeClasses = "bg-teal-600 text-white shadow-md";
-  const inactiveClasses = "text-gray-600 hover:bg-teal-100 hover:text-teal-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white";
+  const desktopNotificationRef = useRef<HTMLDivElement>(null);
+  const mobileNotificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setIsMenuOpen(false);
       }
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+      if (
+        isNotificationsOpen &&
+        desktopNotificationRef.current && !desktopNotificationRef.current.contains(target) &&
+        mobileNotificationRef.current && !mobileNotificationRef.current.contains(target)
+      ) {
         setIsNotificationsOpen(false);
       }
     };
@@ -47,12 +47,15 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [menuRef, notificationRef]);
+  }, [isNotificationsOpen]);
   
   const mobileNavButtonClasses = "w-full text-left px-4 py-3 rounded-md text-base transition-colors flex items-center";
   const mobileActiveClasses = "bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200";
   const mobileInactiveClasses = "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700";
 
+  const navButtonClasses = "px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center";
+  const activeClasses = "bg-teal-600 text-white shadow-md";
+  const inactiveClasses = "text-gray-600 hover:bg-teal-100 hover:text-teal-700 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white";
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40 transition-colors duration-300">
@@ -112,7 +115,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                 <ThemeToggle />
                 
                 {/* Notification Bell */}
-                <div className="relative" ref={notificationRef}>
+                <div className="relative" ref={desktopNotificationRef}>
                     <button 
                         onClick={() => setIsNotificationsOpen(o => !o)} 
                         className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative"
@@ -127,9 +130,15 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-20 border dark:border-gray-700 animate-fade-in-fast">
                             <div className="p-3 border-b dark:border-gray-700 flex justify-between items-center">
                                 <h3 className="font-semibold text-gray-800 dark:text-gray-100">Notifications</h3>
-                                <button onClick={() => setIsNotificationsOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                                    <XIcon className="w-5 h-5"/>
-                                </button>
+                                {notifications.length > 0 && (
+                                    <button 
+                                      onClick={() => { onDismissAllNotifications(); setIsNotificationsOpen(false); }} 
+                                      className="text-xs font-medium text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300"
+                                      aria-label="Dismiss all notifications"
+                                    >
+                                        Dismiss all
+                                    </button>
+                                )}
                             </div>
                             <div className="max-h-80 overflow-y-auto">
                                 {notifications.length > 0 ? (
@@ -208,7 +217,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
               
               {/* Mobile Menu Button */}
               <div className="lg:hidden flex items-center space-x-2">
-                  <div className="relative" ref={notificationRef}>
+                  <div className="relative" ref={mobileNotificationRef}>
                      <button 
                         onClick={() => setIsNotificationsOpen(o => !o)} 
                         className="p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full relative"
@@ -223,9 +232,15 @@ const Header: React.FC<HeaderProps> = ({ currentView, setCurrentView, activeDash
                         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg z-20 border dark:border-gray-700 animate-fade-in-fast">
                              <div className="p-3 border-b dark:border-gray-700 flex justify-between items-center">
                                 <h3 className="font-semibold text-gray-800 dark:text-gray-100">Notifications</h3>
-                                <button onClick={() => setIsNotificationsOpen(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-                                    <XIcon className="w-5 h-5"/>
-                                </button>
+                                {notifications.length > 0 && (
+                                    <button 
+                                      onClick={() => { onDismissAllNotifications(); setIsNotificationsOpen(false); }} 
+                                      className="text-xs font-medium text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300"
+                                      aria-label="Dismiss all notifications"
+                                    >
+                                        Dismiss all
+                                    </button>
+                                )}
                             </div>
                             <div className="max-h-80 overflow-y-auto">
                                 {notifications.length > 0 ? (
