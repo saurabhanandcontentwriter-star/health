@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Medicine, MedicineOrder, User, Address } from '../types';
-import { ShoppingBagIcon, ArchiveIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon, HeartIcon, FileTextIcon, XCircleIcon, QrCodeIcon } from './IconComponents';
+import { ShoppingBagIcon, ArchiveIcon, PlusCircleIcon, MinusCircleIcon, Trash2Icon, HomeIcon, CheckCircleIcon as CheckIcon, SearchIcon, HeartIcon, FileTextIcon, XCircleIcon, QrCodeIcon, XIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import AddressEditor from './AddressEditor';
@@ -326,9 +326,14 @@ const CheckoutView: React.FC<{
                         )}
                     </div>
                     {error && (
-                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                            <span>{error}</span>
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                           <div className="flex items-center">
+                                <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                <span>{error}</span>
+                            </div>
+                            <button type="button" onClick={() => setError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                                <XIcon className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
                     <div className="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700 mt-6">
@@ -361,9 +366,14 @@ const CheckoutView: React.FC<{
                         </button>
                     </div>
                     {error && qrCodeUrl && (
-                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300 w-full">
-                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                            <span>{error}</span>
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300 w-full">
+                            <div className="flex items-center">
+                                <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                <span>{error}</span>
+                            </div>
+                            <button type="button" onClick={() => setError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                                <XIcon className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
                 </div>

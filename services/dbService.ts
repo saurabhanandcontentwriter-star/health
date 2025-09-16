@@ -27,12 +27,12 @@ const saveToStorage = <T>(key: string, value: T): void => {
 
 // --- Initial Data ---
 const initialDoctors: Doctor[] = [
-    { id: 1, name: 'Dr. Ramesh Kumar', specialty: 'General Physician', location: 'Patna', available_time: '10:00 AM - 1:00 PM', imageUrl: 'https://placehold.co/100x100/e0f2fe/0891b2?text=RK' },
-    { id: 2, name: 'Dr. Sunita Sharma', specialty: 'Dentist', location: 'Nalanda', available_time: '2:00 PM - 5:00 PM', imageUrl: 'https://placehold.co/100x100/fecaca/991b1b?text=SS' },
-    { id: 3, name: 'Dr. Vijay Singh', specialty: 'Cardiologist', location: 'Patna', available_time: '9:00 AM - 12:00 PM', imageUrl: 'https://placehold.co/100x100/d1fae5/065f46?text=VS' },
-    { id: 4, name: 'Dr. Anjali Verma', specialty: 'Dermatologist', location: 'Gaya', available_time: '11:00 AM - 3:00 PM', imageUrl: 'https://placehold.co/100x100/ede9fe/5b21b6?text=AV' },
-    { id: 5, name: 'Dr. Deepak Gupta', specialty: 'Pediatrician', location: 'Muzaffarpur', available_time: '10:00 AM - 4:00 PM', imageUrl: 'https://placehold.co/100x100/fee2e2/991b1b?text=DG' },
-    { id: 6, name: 'Dr. Priya Mehta', specialty: 'Gynecologist', location: 'Patna', available_time: '1:00 PM - 6:00 PM', imageUrl: 'https://placehold.co/100x100/fce7f3/831843?text=PM' }
+    { id: 1, name: 'Ramesh Kumar', specialty: 'General Physician', location: 'Patna', available_time: '10:00 AM - 1:00 PM', imageUrl: 'https://placehold.co/100x100/e0f2fe/0891b2?text=RK' },
+    { id: 2, name: 'Sunita Sharma', specialty: 'Dentist', location: 'Nalanda', available_time: '2:00 PM - 5:00 PM', imageUrl: 'https://placehold.co/100x100/fecaca/991b1b?text=SS' },
+    { id: 3, name: 'Vijay Singh', specialty: 'Cardiologist', location: 'Patna', available_time: '9:00 AM - 12:00 PM', imageUrl: 'https://placehold.co/100x100/d1fae5/065f46?text=VS' },
+    { id: 4, name: 'Anjali Verma', specialty: 'Dermatologist', location: 'Gaya', available_time: '11:00 AM - 3:00 PM', imageUrl: 'https://placehold.co/100x100/ede9fe/5b21b6?text=AV' },
+    { id: 5, name: 'Deepak Gupta', specialty: 'Pediatrician', location: 'Muzaffarpur', available_time: '10:00 AM - 4:00 PM', imageUrl: 'https://placehold.co/100x100/fee2e2/991b1b?text=DG' },
+    { id: 6, name: 'Priya Mehta', specialty: 'Gynecologist', location: 'Patna', available_time: '1:00 PM - 6:00 PM', imageUrl: 'https://placehold.co/100x100/fce7f3/831843?text=PM' }
 ];
 
 const initialUsers: User[] = [

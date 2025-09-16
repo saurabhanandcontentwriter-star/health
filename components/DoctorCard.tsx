@@ -15,12 +15,12 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onClick }) => {
     <button
       onClick={() => onClick(doctor)}
       className="w-full text-left bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:border dark:border-gray-700 dark:hover:border-teal-500 flex flex-col focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"
-      aria-label={`View details for ${doctor.name}`}
+      aria-label={`View details for Dr. ${doctor.name}`}
     >
       <div className="p-6 flex-grow">
         <div className="flex items-start justify-between">
             <div>
-                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">{doctor.name}</h3>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100">Dr. {doctor.name}</h3>
                 <div className="flex items-center mt-2">
                     <StethoscopeIcon className="h-5 w-5 text-teal-500" />
                     <p className="ml-2 text-md text-teal-600 dark:text-teal-400 font-medium">{doctor.specialty}</p>

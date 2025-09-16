@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { MicIcon, MicOffIcon, VideoIcon, VideoOffIcon, PhoneOffIcon } from './IconComponents';
+import { MicIcon, MicOffIcon, VideoIcon, VideoOffIcon, PhoneOffIcon, XCircleIcon } from './IconComponents';
 import { Doctor } from '../types';
 
 interface VideoCallViewProps {
@@ -13,19 +13,17 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onEndCall, doctor }) => {
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
-  const [error, setError] = useState<{ title: string; message: string } | null>(null);
+  const [error, setError] = useState<{ title: string; message: string; action?: 'retry' | 'reload' } | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
-  const setMediaError = (title: string, message: string) => {
-    setError({ title, message });
+  const setMediaError = (title: string, message: string, action?: 'retry' | 'reload') => {
+    setError({ title, message, action });
   };
 
-  useEffect(() => {
-    let stream: MediaStream | null = null;
-    
-    const startMedia = async () => {
-      try {
+  const startMedia = useCallback(async () => {
+    setError(null);
+    try {
         if (window.location.protocol !== 'https:') {
             setMediaError("Insecure Connection", "A secure (HTTPS) connection is required to use the camera and microphone.");
             return;
@@ -42,11 +40,11 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onEndCall, doctor }) => {
             } else if (!hasCamera && hasMicrophone) {
                  message = "No camera was found. Please connect a camera to continue.";
             }
-            setMediaError("Device Not Found", message);
+            setMediaError("Device Not Found", message, 'retry');
             return;
         }
 
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         setLocalStream(stream);
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -70,41 +68,46 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onEndCall, doctor }) => {
            const remoteStream = (canvas as any).captureStream();
            remoteVideoRef.current.srcObject = remoteStream;
         }
-      } catch (err) {
-        console.error("Error accessing media devices.", err);
-        
-        if (err instanceof Error) {
-            switch (err.name) {
-                case 'NotAllowedError':
-                case 'PermissionDeniedError':
-                    setMediaError("Permission Denied", "You denied permission to use the camera and microphone. To use this feature, please grant access in your browser's site settings and reload the page.");
-                    break;
-                case 'NotFoundError':
-                case 'DevicesNotFoundError':
-                    setMediaError("Device Not Found", "No camera or microphone was found. Please ensure your devices are connected and enabled.");
-                    break;
-                case 'NotReadableError':
-                case 'TrackStartError':
-                    setMediaError("Device In Use", "Your camera or microphone might be in use by another application. Please close other apps and try again.");
-                    break;
-                default:
-                    setMediaError("An Error Occurred", `An unexpected error occurred: ${err.message}. Please try again.`);
-                    break;
-            }
-        } else {
-            setMediaError("An Error Occurred", "Could not access camera and microphone. Please check permissions and try again.");
-        }
+    } catch (err) {
+      console.error("Error accessing media devices.", err);
+      
+      if (err instanceof Error) {
+          switch (err.name) {
+              case 'NotAllowedError':
+              case 'PermissionDeniedError':
+                  setMediaError("Permission Denied", "You denied permission to use the camera and microphone. To use this feature, please grant access in your browser's site settings and reload the page.", 'reload');
+                  break;
+              case 'NotFoundError':
+              case 'DevicesNotFoundError':
+                  setMediaError("Device Not Found", "No camera or microphone was found. Please ensure your devices are connected and enabled.", 'retry');
+                  break;
+              case 'NotReadableError':
+              case 'TrackStartError':
+                  setMediaError("Device In Use", "Your camera or microphone might be in use by another application. Please close other apps and try again.", 'retry');
+                  break;
+              default:
+                  setMediaError("An Error Occurred", `An unexpected error occurred: ${err.message}. Please try again.`, 'retry');
+                  break;
+          }
+      } else {
+          setMediaError("An Error Occurred", "Could not access camera and microphone. Please check permissions and try again.", 'retry');
       }
-    };
-
-    startMedia();
-
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
+    }
   }, [doctor.name]);
+
+  useEffect(() => {
+    startMedia();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const currentStream = localStream;
+    return () => {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [localStream]);
 
   const toggleMic = () => {
     if (localStream) {
@@ -127,21 +130,41 @@ const VideoCallView: React.FC<VideoCallViewProps> = ({ onEndCall, doctor }) => {
   const handleEndCall = () => {
     if (localStream) {
       localStream.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
     }
     onEndCall();
   };
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] bg-red-50 rounded-lg p-8">
-        <h2 className="text-2xl font-bold text-red-700 mb-4">{error.title}</h2>
-        <p className="text-red-700 text-center max-w-md mb-6">{error.message}</p>
-        <button
-          onClick={handleEndCall}
-          className="px-6 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-        >
-          Go Back
-        </button>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-10rem)] bg-red-50 dark:bg-red-900/20 rounded-lg p-8">
+        <XCircleIcon className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold text-red-700 dark:text-red-300 mb-4">{error.title}</h2>
+        <p className="text-red-600 dark:text-red-400 text-center max-w-md mb-6">{error.message}</p>
+        <div className="flex space-x-4">
+            <button
+              onClick={handleEndCall}
+              className="px-6 py-2 bg-gray-500 text-white font-semibold rounded-md hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+            >
+              Go Back
+            </button>
+            {error.action === 'retry' && (
+                <button
+                  onClick={startMedia}
+                  className="px-6 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Retry
+                </button>
+            )}
+             {error.action === 'reload' && (
+                <button
+                  onClick={() => window.location.reload()}
+                  className="px-6 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  Reload Page
+                </button>
+             )}
+        </div>
       </div>
     );
   }

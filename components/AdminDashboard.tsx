@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Doctor, Appointment, AuthLog, PharmaCompany, UserSession, MedicineOrder, Medicine, LabTestBooking, DeliveryBoy, User, LabTest } from '../types';
-import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, PlusCircleIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon, RefundIcon, ShoppingBagIcon, BeakerIcon, TestTubeIcon, ClipboardCheckIcon } from './IconComponents';
+import { RupeeIcon, QrCodeIcon, ActivityIcon, StethoscopeIcon, UserPlusIcon, PillIcon, HourglassIcon, SendIcon, PlusCircleIcon, XCircleIcon, CheckCircleIcon, EditIcon, Trash2Icon, TruckIcon, RefundIcon, ShoppingBagIcon, BeakerIcon, TestTubeIcon, ClipboardCheckIcon, XIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import * as db from '../services/dbService';
 import DoctorForm from './AddDoctorForm';
@@ -239,9 +239,14 @@ const OverviewView: React.FC<OverviewViewProps> =
                         </button>
                     </div>
                     {qrError && (
-                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                            <span>{qrError}</span>
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                            <div className="flex items-center">
+                                <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                <span>{qrError}</span>
+                            </div>
+                            <button type="button" onClick={() => setQrError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                                <XIcon className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
                     {qrCodeUrl && <img src={qrCodeUrl} alt="Generated QR Code" className="mx-auto mt-4 w-48 h-48 bg-white p-2 rounded-md"/>}
@@ -258,9 +263,14 @@ const OverviewView: React.FC<OverviewViewProps> =
                             <input type="text" value={confirmAccountNumber} onChange={e => setConfirmAccountNumber(e.target.value)} placeholder="Confirm Account Number" className={inputClasses} required />
                             <input type="text" value={ifscCode} onChange={e => setIfscCode(e.target.value.toUpperCase())} placeholder="IFSC Code" className={inputClasses} required />
                             {transferError && (
-                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                                    <span>{transferError}</span>
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                                    <div className="flex items-center">
+                                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                        <span>{transferError}</span>
+                                    </div>
+                                    <button type="button" onClick={() => setTransferError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                                        <XIcon className="w-4 h-4" />
+                                    </button>
                                 </div>
                             )}
                             <button type="submit" className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Transfer</button>
@@ -272,9 +282,14 @@ const OverviewView: React.FC<OverviewViewProps> =
                             <div className="p-2 bg-yellow-100 text-yellow-800 text-center rounded-md"><p>Simulated OTP: <span className="font-bold">{generatedOtp}</span></p></div>
                             <input type="text" value={otp} onChange={e => setOtp(e.target.value)} placeholder="Enter 6-digit OTP" className={inputClasses} required />
                             {transferError && (
-                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                                    <span>{transferError}</span>
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                                    <div className="flex items-center">
+                                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                        <span>{transferError}</span>
+                                    </div>
+                                    <button type="button" onClick={() => setTransferError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                                        <XIcon className="w-4 h-4" />
+                                    </button>
                                 </div>
                             )}
                             <button type="submit" className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Confirm Transfer</button>
@@ -301,9 +316,14 @@ const OverviewView: React.FC<OverviewViewProps> =
                             <input type="text" value={refundUpiId} onChange={e => setRefundUpiId(e.target.value)} placeholder="Customer UPI ID" className={inputClasses} required />
                             <textarea value={refundReason} onChange={e => setRefundReason(e.target.value)} placeholder="Reason for refund (optional)" rows={2} className={inputClasses} />
                             {refundError && (
-                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                                    <span>{refundError}</span>
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                                    <div className="flex items-center">
+                                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                        <span>{refundError}</span>
+                                    </div>
+                                    <button type="button" onClick={() => setRefundError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                                        <XIcon className="w-4 h-4" />
+                                    </button>
                                 </div>
                             )}
                             <button type="submit" className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Initiate</button>
@@ -315,9 +335,14 @@ const OverviewView: React.FC<OverviewViewProps> =
                             <div className="p-2 bg-yellow-100 text-yellow-800 text-center rounded-md"><p>Simulated OTP: <span className="font-bold">{generatedRefundOtp}</span></p></div>
                             <input type="text" value={refundOtp} onChange={e => setRefundOtp(e.target.value)} placeholder="Enter 6-digit OTP" className={inputClasses} required />
                             {refundError && (
-                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                                    <span>{refundError}</span>
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                                    <div className="flex items-center">
+                                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                        <span>{refundError}</span>
+                                    </div>
+                                    <button type="button" onClick={() => setRefundError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                                        <XIcon className="w-4 h-4" />
+                                    </button>
                                 </div>
                             )}
                             <button type="submit" className="w-full py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700">Confirm Refund</button>
@@ -383,9 +408,14 @@ const MedicineOrdersView: React.FC<MedicineOrdersViewProps> = ({ allMedicineOrde
                     <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Medicine Orders</h3>
                 </div>
                 {error && (
-                    <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                        <span>{error}</span>
+                    <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                        <div className="flex items-center">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                        <button type="button" onClick={() => setError(null)} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                            <XIcon className="w-4 h-4" />
+                        </button>
                     </div>
                 )}
                 <div className="overflow-x-auto max-h-[60vh]">
@@ -479,9 +509,14 @@ const TestBookingsView: React.FC<TestBookingsViewProps> = ({ allLabTestBookings,
                     <h3 className="ml-3 text-xl font-bold text-gray-800 dark:text-gray-100">Lab Test Bookings</h3>
                 </div>
                  {error && (
-                    <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                        <span>{error}</span>
+                    <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                        <div className="flex items-center">
+                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                            <span>{error}</span>
+                        </div>
+                        <button type="button" onClick={() => setError(null)} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                            <XIcon className="w-4 h-4" />
+                        </button>
                     </div>
                 )}
                 <div className="overflow-x-auto max-h-[60vh]">
@@ -737,9 +772,14 @@ const AppointmentsView: React.FC<AppointmentsViewProps> = ({ appointments, refre
         <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">All Appointments</h3>
              {error && (
-                <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                    <span>{error}</span>
+                <div className="my-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                    <div className="flex items-center">
+                        <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                        <span>{error}</span>
+                    </div>
+                    <button type="button" onClick={() => setError(null)} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                        <XIcon className="w-4 h-4" />
+                    </button>
                 </div>
             )}
             <div className="overflow-x-auto max-h-[60vh]">
@@ -831,6 +871,7 @@ const LogsView: React.FC<LogsViewProps> = ({ authLogs, sessions }) => {
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            {/* FIX: Incorrect use of sessions.map was causing a type error. */}
                             {sessions.map((session) => (
                                 <tr key={`session-${session.id}`} className="dark:hover:bg-gray-700/50">
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{session.userName}</td>
@@ -870,19 +911,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = (props) => {
         return <MedicineOrdersView {...props} />;
       case 'testBookings':
         return <TestBookingsView {...props} />;
+      case 'patients':
+        return <PatientsView 
+            users={props.users.filter(u => u.role === 'patient')}
+            appointments={props.appointments}
+            medicineOrders={props.allMedicineOrders}
+            labTestBookings={props.allLabTestBookings}
+        />;
       case 'doctors':
         return <DoctorsView {...props} />;
       case 'medicines':
         return <MedicinesView {...props} />;
       case 'labTests':
         return <LabTestsManagementView {...props} />;
-      case 'patients':
-        return <PatientsView
-            users={props.users.filter(u => u.role === 'patient')}
-            appointments={props.appointments}
-            medicineOrders={props.allMedicineOrders}
-            labTestBookings={props.allLabTestBookings}
-        />;
       case 'appointments':
         return <AppointmentsView {...props} />;
       case 'logs':

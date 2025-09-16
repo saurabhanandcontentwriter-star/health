@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Medicine, MedicineIn } from '../types';
 import * as db from '../services/dbService';
-import { PillIcon, XCircleIcon } from './IconComponents';
+import { PillIcon, XCircleIcon, XIcon } from './IconComponents';
 
 interface MedicineFormProps {
     medicineToEdit?: Medicine | null;
@@ -131,9 +131,14 @@ const MedicineForm: React.FC<MedicineFormProps> = ({ medicineToEdit, onSuccess, 
                     </div>
 
                     {error && (
-                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                            <span>{error}</span>
+                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                            <div className="flex items-center">
+                                <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                                <span>{error}</span>
+                            </div>
+                            <button type="button" onClick={() => setError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                                <XIcon className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
 

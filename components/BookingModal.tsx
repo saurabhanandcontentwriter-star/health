@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Doctor, Appointment, AppointmentIn } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { FileTextIcon, QrCodeIcon, XCircleIcon, CheckCircleIcon } from './IconComponents';
+import { FileTextIcon, QrCodeIcon, XCircleIcon, CheckCircleIcon, XIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import { CONSULTATION_FEE, GST_RATE } from '../utils/constants';
 
@@ -284,9 +284,14 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
         </div>
         
         {error && (
-            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-                <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                <span>{error}</span>
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+                <div className="flex items-center">
+                    <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                    <span>{error}</span>
+                </div>
+                <button type="button" onClick={() => setError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                    <XIcon className="w-4 h-4" />
+                </button>
             </div>
         )}
 
@@ -313,14 +318,19 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
             
             {error && (
                 <div className="w-full my-4 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-r-lg" role="alert">
-                    <div className="flex">
-                        <div className="flex-shrink-0">
-                            <XCircleIcon className="h-5 w-5 text-red-500" />
+                    <div className="flex justify-between items-start">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <XCircleIcon className="h-5 w-5 text-red-500" />
+                            </div>
+                            <div className="ml-3 text-left">
+                                <h3 className="text-md font-bold text-red-800 dark:text-red-200">An Error Occurred</h3>
+                                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+                            </div>
                         </div>
-                        <div className="ml-3 text-left">
-                            <h3 className="text-md font-bold text-red-800 dark:text-red-200">An Error Occurred</h3>
-                            <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
-                        </div>
+                         <button type="button" onClick={() => setError('')} className="ml-3 p-1 -mr-2 -mt-2 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 self-start" aria-label="Dismiss error">
+                            <XIcon className="w-4 h-4" />
+                        </button>
                     </div>
                 </div>
             )}

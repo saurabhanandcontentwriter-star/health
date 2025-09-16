@@ -234,10 +234,10 @@ export const XCircleIcon: React.FC<{className?: string}> = ({ className }) => (
   </svg>
 );
 
-export const CheckCircleIcon: React.FC<{className?: string, filled?: boolean}> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-    <polyline points="22 4 12 14.01 9 11.01"/>
+export const CheckCircleIcon: React.FC<{className?: string}> = ({ className }) => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <circle cx="12" cy="12" r="12" fill="currentColor"/>
+    <path d="M17.2738 8.52628L10.375 15.4251L7.125 12.1751" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 

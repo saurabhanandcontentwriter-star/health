@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { User, Address, Appointment } from '../types';
 import * as db from '../services/dbService';
-import { PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon, CameraIcon, XCircleIcon, FileTextIcon } from './IconComponents';
+import { PlusCircleIcon, EditIcon, Trash2Icon, CheckCircleIcon, HomeIcon, ShoppingBagIcon, CameraIcon, XCircleIcon, FileTextIcon, XIcon } from './IconComponents';
 import AddressEditor from './AddressEditor';
 
 
@@ -170,10 +170,17 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
     const inputClasses = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400";
     const readOnlyClasses = "mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300";
 
-    const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center text-sm text-red-700 dark:text-red-300">
-            <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-            <span>{message}</span>
+    const ErrorMessage: React.FC<{ message: string; onDismiss?: () => void }> = ({ message, onDismiss }) => (
+        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300">
+            <div className="flex items-center">
+                <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
+                <span>{message}</span>
+            </div>
+            {onDismiss && (
+                 <button type="button" onClick={onDismiss} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
+                    <XIcon className="w-4 h-4" />
+                </button>
+            )}
         </div>
     );
 
@@ -219,8 +226,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user: initialUser, addresses,
                         </div>
 
                         {success && <div className="mb-4 p-3 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 rounded-md text-sm">{success}</div>}
-                        {error && <ErrorMessage message={error} />}
-                        {imageError && <ErrorMessage message={imageError} />}
+                        {error && <ErrorMessage message={error} onDismiss={() => setError('')} />}
+                        {imageError && <ErrorMessage message={imageError} onDismiss={() => setImageError('')} />}
 
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
