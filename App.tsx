@@ -201,14 +201,8 @@ const App: React.FC = () => {
   }, [refreshData, doctors]);
 
   const handleCancelAppointment = useCallback((appointmentId: number) => {
-    try {
-        db.updateAppointmentStatus(appointmentId, 'Cancelled');
-        refreshData();
-        // You could add a success toast notification here if desired
-    } catch (error) {
-        console.error("Failed to cancel appointment:", error);
-        // You could add an error toast notification here if desired
-    }
+    db.updateAppointmentStatus(appointmentId, 'Cancelled');
+    refreshData();
   }, [refreshData]);
 
   const handleSelectSlot = (doctor: Doctor, date: string, slot: string) => {

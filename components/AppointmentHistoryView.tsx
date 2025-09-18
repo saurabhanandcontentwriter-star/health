@@ -1,7 +1,4 @@
-
-
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Appointment } from '../types';
 import { StethoscopeIcon, ClockIcon, FileTextIcon, RefreshCwIcon, XCircleIcon } from './IconComponents';
 
@@ -22,6 +19,7 @@ const StatusBadge: React.FC<{ status: Appointment['status'] }> = ({ status }) =>
 };
 
 const AppointmentHistoryView: React.FC<AppointmentHistoryViewProps> = ({ appointments, onCancelAppointment }) => {
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   const sortedAppointments = [...appointments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -33,15 +31,31 @@ const AppointmentHistoryView: React.FC<AppointmentHistoryViewProps> = ({ appoint
     downloadLink.click();
   }
   
+  const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
+      setNotification({ type, message });
+      setTimeout(() => setNotification(null), 4000);
+  };
+  
   const handleCancelClick = (id: number) => {
     if (window.confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
-        onCancelAppointment(id);
+        try {
+            onCancelAppointment(id);
+            showNotification('Appointment cancelled successfully.', 'success');
+        } catch (error) {
+            console.error("Failed to cancel appointment:", error);
+            showNotification('Failed to cancel appointment. Please try again.', 'error');
+        }
     }
   };
 
 
   return (
     <div className="space-y-6">
+       {notification && (
+            <div className={`fixed top-24 right-8 z-50 p-4 rounded-lg shadow-lg text-white animate-slide-in-right ${notification.type === 'success' ? 'bg-teal-600' : 'bg-red-600'}`}>
+                {notification.message}
+            </div>
+        )}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Your Appointment History</h1>
       </div>
