@@ -35,6 +35,7 @@ export interface Appointment {
   nutrition_notes: string;
   report_pdf_base64?: string;
   status: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show';
+  cancellationReason?: string;
 }
 
 export interface DoctorIn {

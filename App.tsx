@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DoctorCard from './components/DoctorCard';
@@ -18,6 +19,7 @@ import UserProfile from './components/UserProfile';
 import OrderHistoryView from './components/OrderHistoryView';
 import { useAuth } from './contexts/AuthContext';
 import * as db from './services/dbService';
+import { useMockDb } from './hooks/useMockDb';
 import { User, Doctor, Appointment, AppointmentIn, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, LabTest, LabTestBooking, LabTestBookingIn, Message } from './types';
 import { SearchIcon, StethoscopeIcon } from './components/IconComponents';
 import LabTestBookingModal from './components/LabTestBookingModal';
@@ -29,23 +31,27 @@ import PatientSidebar from './components/PatientSidebar';
 const App: React.FC = () => {
   const [permissionsGranted, setPermissionsGranted] = useState(localStorage.getItem('permissions-granted') === 'true');
   const { isAuthenticated, user, authLogs, logout } = useAuth();
+  
+  const {
+      users,
+      doctors,
+      appointments,
+      pharmaCompanies,
+      sessions,
+      medicines,
+      allMedicineOrders,
+      addresses,
+      labTests,
+      allLabTestBookings,
+      userAppointments,
+      medicineOrders,
+      labTestBookings,
+      refreshData
+  } = useMockDb(user);
+
   const [currentView, setCurrentView] = useState<'search' | 'dashboard' | 'ownerDashboard' | 'pharmacy' | 'labTests' | 'appointmentHistory' | 'profile' | 'orderHistory'>('search');
   const [activeDashboardTab, setActiveDashboardTab] = useState<string>('overview');
   const [activeOrderHistoryTab, setActiveOrderHistoryTab] = useState<'medicines' | 'labTests'>('medicines');
-  
-  const [users, setUsers] = useState<User[]>([]);
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [userAppointments, setUserAppointments] = useState<Appointment[]>([]);
-  const [pharmaCompanies, setPharmaCompanies] = useState<PharmaCompany[]>([]);
-  const [sessions, setSessions] = useState<UserSession[]>([]);
-  const [medicines, setMedicines] = useState<Medicine[]>([]);
-  const [medicineOrders, setMedicineOrders] = useState<MedicineOrder[]>([]);
-  const [allMedicineOrders, setAllMedicineOrders] = useState<MedicineOrder[]>([]);
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [labTests, setLabTests] = useState<LabTest[]>([]);
-  const [labTestBookings, setLabTestBookings] = useState<LabTestBooking[]>([]);
-  const [allLabTestBookings, setAllLabTestBookings] = useState<LabTestBooking[]>([]);
   
   const [location, setLocation] = useState('');
   const [specialty, setSpecialty] = useState('');
@@ -65,42 +71,12 @@ const App: React.FC = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [botMessage, setBotMessage] = useState<Message | null>(null);
 
-
-  const refreshData = useCallback(() => {
-    const allUsers = db.getUsers();
-    const allDoctors = db.getDoctors();
-    const allAppointments = db.getAllAppointments();
-    const allPharmaCompanies = db.getPharmaCompanies();
-    const allSessions = db.getAllSessions();
-    const allMedicines = db.getMedicines();
-    const allOrders = db.getAllMedicineOrders();
-    const allLabTests = db.getLabTests();
-    const allBookings = db.getAllLabTestBookings();
-    
-    setUsers(allUsers);
-    setDoctors(allDoctors);
-    setFilteredDoctors(allDoctors); // Initially show all doctors
-    setAppointments(allAppointments);
-    setPharmaCompanies(allPharmaCompanies);
-    setSessions(allSessions);
-    setMedicines(allMedicines);
-    setAllMedicineOrders(allOrders);
-    setLabTests(allLabTests);
-    setAllLabTestBookings(allBookings);
-    
-    if (user) {
-        setMedicineOrders(db.getMedicineOrdersForUser(user.id));
-        setAddresses(db.getAddressesForUser(user.id));
-        setLabTestBookings(db.getLabTestBookingsForUser(user.id));
-        setUserAppointments(allAppointments.filter(a => a.userId === user.id));
-    }
-
-  }, [user]);
+  useEffect(() => {
+    setFilteredDoctors(doctors);
+  }, [doctors]);
   
   useEffect(() => {
     if (isAuthenticated && user) {
-      refreshData();
-      
       const validViewsForRole: Record<User['role'], string[]> = {
           patient: ['search', 'pharmacy', 'labTests', 'appointmentHistory', 'profile', 'orderHistory'],
           admin: ['search', 'dashboard', 'pharmacy', 'labTests', 'appointmentHistory', 'profile', 'orderHistory'],
@@ -127,7 +103,6 @@ const App: React.FC = () => {
 
       // Check for appointment reminders
       const checkReminders = () => {
-          const userAppointments = db.getAllAppointments().filter(a => a.userId === user.id);
           const now = new Date();
 
           const upcomingAppointments = userAppointments.filter(appt => {
@@ -174,7 +149,7 @@ const App: React.FC = () => {
       checkReminders();
 
     }
-  }, [isAuthenticated, user, currentView, refreshData]);
+  }, [isAuthenticated, user, currentView, userAppointments]);
 
   const handleSearch = () => {
     const results = db.getDoctors(location, specialty);
@@ -200,8 +175,8 @@ const App: React.FC = () => {
     return newAppointment;
   }, [refreshData, doctors]);
 
-  const handleCancelAppointment = useCallback((appointmentId: number) => {
-    db.updateAppointmentStatus(appointmentId, 'Cancelled');
+  const handleCancelAppointment = useCallback((appointmentId: number, reason: string) => {
+    db.updateAppointmentStatus(appointmentId, 'Cancelled', reason);
     refreshData();
   }, [refreshData]);
 

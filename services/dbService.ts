@@ -145,11 +145,14 @@ export const bookAppointment = async (data: AppointmentIn): Promise<Appointment>
     return newAppointment;
 };
 
-export const updateAppointmentStatus = (id: number, status: Appointment['status']): void => {
+export const updateAppointmentStatus = (id: number, status: Appointment['status'], reason?: string): void => {
     let appointments = getAllAppointments();
     const index = appointments.findIndex(appt => appt.id === id);
     if (index !== -1) {
         appointments[index].status = status;
+        if (status === 'Cancelled' && reason) {
+            appointments[index].cancellationReason = reason;
+        }
         saveToStorage(APPOINTMENTS_KEY, appointments);
     } else {
         throw new Error("Appointment not found");

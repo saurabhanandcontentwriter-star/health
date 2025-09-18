@@ -4,7 +4,7 @@ import { StethoscopeIcon, ClockIcon, FileTextIcon, RefreshCwIcon, XCircleIcon } 
 
 interface AppointmentHistoryViewProps {
   appointments: Appointment[];
-  onCancelAppointment: (id: number) => void;
+  onCancelAppointment: (id: number, reason: string) => void;
 }
 
 const StatusBadge: React.FC<{ status: Appointment['status'] }> = ({ status }) => {
@@ -18,8 +18,49 @@ const StatusBadge: React.FC<{ status: Appointment['status'] }> = ({ status }) =>
     return <span className={`${baseClasses} ${statusMap[status]}`}>{status.replace('-', ' ')}</span>;
 };
 
+const CancellationReasonModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: (reason: string) => void;
+}> = ({ isOpen, onClose, onConfirm }) => {
+    const [reason, setReason] = useState('');
+
+    if (!isOpen) return null;
+
+    const handleConfirm = () => {
+        onConfirm(reason);
+        setReason('');
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">Cancel Appointment</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Please provide a reason for cancellation. This helps us improve our service.</p>
+                <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="e.g., Schedule conflict, feeling better..."
+                    className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    rows={3}
+                />
+                <div className="flex justify-end space-x-4 mt-6">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
+                        Keep Appointment
+                    </button>
+                    <button onClick={handleConfirm} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                        Confirm Cancellation
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const AppointmentHistoryView: React.FC<AppointmentHistoryViewProps> = ({ appointments, onCancelAppointment }) => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [appointmentToCancel, setAppointmentToCancel] = useState<Appointment | null>(null);
 
   const sortedAppointments = [...appointments].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -36,14 +77,20 @@ const AppointmentHistoryView: React.FC<AppointmentHistoryViewProps> = ({ appoint
       setTimeout(() => setNotification(null), 4000);
   };
   
-  const handleCancelClick = (id: number) => {
-    if (window.confirm('Are you sure you want to cancel this appointment? This action cannot be undone.')) {
+  const handleCancelClick = (appointment: Appointment) => {
+    setAppointmentToCancel(appointment);
+  };
+  
+  const handleConfirmCancellation = (reason: string) => {
+    if (appointmentToCancel) {
         try {
-            onCancelAppointment(id);
+            onCancelAppointment(appointmentToCancel.id, reason);
             showNotification('Appointment cancelled successfully.', 'success');
         } catch (error) {
             console.error("Failed to cancel appointment:", error);
             showNotification('Failed to cancel appointment. Please try again.', 'error');
+        } finally {
+            setAppointmentToCancel(null);
         }
     }
   };
@@ -56,6 +103,11 @@ const AppointmentHistoryView: React.FC<AppointmentHistoryViewProps> = ({ appoint
                 {notification.message}
             </div>
         )}
+        <CancellationReasonModal
+            isOpen={!!appointmentToCancel}
+            onClose={() => setAppointmentToCancel(null)}
+            onConfirm={handleConfirmCancellation}
+        />
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Your Appointment History</h1>
       </div>
@@ -95,7 +147,7 @@ const AppointmentHistoryView: React.FC<AppointmentHistoryViewProps> = ({ appoint
                     )}
                     {appt.status === 'Scheduled' && (
                         <button
-                            onClick={() => handleCancelClick(appt.id)}
+                            onClick={() => handleCancelClick(appt)}
                             className="inline-flex items-center px-4 py-2 bg-red-50 text-red-700 text-sm font-semibold rounded-lg hover:bg-red-100 transition-colors border border-red-700 shadow-sm dark:bg-red-900/20 dark:text-red-300 dark:border-red-600 dark:hover:bg-red-900/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                         >
                             <XCircleIcon className="w-5 h-5 mr-2" />
@@ -119,6 +171,13 @@ const AppointmentHistoryView: React.FC<AppointmentHistoryViewProps> = ({ appoint
                    </ul>
                 </div>
               </div>
+
+              {appt.status === 'Cancelled' && appt.cancellationReason && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Reason for Cancellation</h4>
+                    <p className="text-gray-600 dark:text-gray-300 italic bg-red-50 dark:bg-red-900/20 p-3 rounded-md text-sm">"{appt.cancellationReason}"</p>
+                </div>
+              )}
             </div>
           ))}
         </div>
