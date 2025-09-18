@@ -31,6 +31,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
   const [nutritionNotes, setNutritionNotes] = useState('');
   const [reportPdf, setReportPdf] = useState<File | null>(null);
   const [fileError, setFileError] = useState('');
+  const [dueDate, setDueDate] = useState('');
 
   // Modal flow state
   const [step, setStep] = useState<'details' | 'payment' | 'confirmed'>('details');
@@ -119,6 +120,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
           blood_test_notes: bloodTestNotes,
           nutrition_notes: nutritionNotes,
           report_pdf_file: reportPdf,
+          dueDate: dueDate,
         });
         setConfirmedAppointment(newAppointment);
         setStep('confirmed');
@@ -244,6 +246,17 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
                 <div>
                     <label htmlFor="heartBeatRate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Heart Beat Rate (BPM)</label>
                     <input type="number" id="heartBeatRate" value={heartBeatRate} onChange={(e) => setHeartBeatRate(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="e.g., 72"/>
+                </div>
+                 <div>
+                    <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Follow-up Due Date</label>
+                    <input
+                        type="date"
+                        id="dueDate"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                        className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        min={new Date().toISOString().split("T")[0]}
+                    />
                 </div>
                 <div>
                     <label htmlFor="symptoms" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Symptoms</label>

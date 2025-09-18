@@ -36,6 +36,7 @@ export interface Appointment {
   report_pdf_base64?: string;
   status: 'Scheduled' | 'Completed' | 'Cancelled' | 'No-Show';
   cancellationReason?: string;
+  dueDate?: string; // YYYY-MM-DD
 }
 
 export interface DoctorIn {
@@ -58,6 +59,7 @@ export interface AppointmentIn {
   blood_test_notes: string;
   nutrition_notes: string;
   report_pdf_file?: File | null;
+  dueDate?: string;
 }
 
 export interface AuthLog {

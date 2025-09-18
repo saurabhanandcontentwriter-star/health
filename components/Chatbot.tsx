@@ -97,7 +97,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [showFaceScan, setShowFaceScan] = useState(false);
     
-    const [language, setLanguage] = useState<'en' | 'hi' | null>(null);
+    const [language, setLanguage] = useState<'en' | 'hi' | 'bho' | null>(null);
     
     const [isListening, setIsListening] = useState(false);
     const recognitionRef = useRef<SpeechRecognition | null>(null);
@@ -149,10 +149,23 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
             if(chatSession) {
                 chatRef.current = chatSession;
                 if(messages.length === 0) {
-                    const greeting = getGreeting();
-                    const welcomeText = language === 'en'
-                        ? `${greeting}! Welcome to BHC. I can help find doctors, book lab tests, analyze health reports, or perform a wellness face scan. How can I help?`
-                        : `${greeting === 'Good Morning' ? 'सुप्रभात' : greeting === 'Good Afternoon' ? 'शुभ दोपहर' : 'शुभ संध्या'}! BHC में आपका स्वागत है। मैं डॉक्टर खोजने, लैब टेस्ट बुक करने, स्वास्थ्य रिपोर्ट का विश्लेषण करने या वेलनेस फेस स्कैन करने में मदद कर सकता हूँ। मैं आपकी कैसे मदद कर सकता हूँ?`;
+                    let greetingText = getGreeting();
+                    let welcomeText = '';
+
+                    switch(language) {
+                        case 'hi':
+                            greetingText = greetingText === 'Good Morning' ? 'सुप्रभात' : greetingText === 'Good Afternoon' ? 'शुभ दोपहर' : 'शुभ संध्या';
+                            welcomeText = `${greetingText}! BHC में आपका स्वागत है। मैं डॉक्टर खोजने, लैब टेस्ट बुक करने, स्वास्थ्य रिपोर्ट का विश्लेषण करने या वेलनेस फेस स्कैन करने में मदद कर सकता हूँ। मैं आपकी कैसे मदद कर सकता हूँ?`;
+                            break;
+                        case 'bho':
+                            greetingText = greetingText === 'Good Morning' ? 'सुप्रभात' : greetingText === 'Good Afternoon' ? 'शुभ दुपहरिया' : 'शुभ साँझ';
+                            welcomeText = `${greetingText}! BHC में राउर स्वागत बा। हम डॉक्टर खोजे, लैब टेस्ट बुक करे, हेल्थ रिपोर्ट के विश्लेषण करे, चाहे वेलनेस फेस स्कैन करे में मदद कर सकींला। हम राउर का मदद कर सकीला?`;
+                            break;
+                        case 'en':
+                        default:
+                            welcomeText = `${getGreeting()}! Welcome to BHC. I can help find doctors, book lab tests, analyze health reports, or perform a wellness face scan. How can I help?`;
+                            break;
+                    }
 
                     setMessages([{ 
                         role: 'model', 
@@ -185,7 +198,8 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
         const recognition = new SpeechRecognitionAPI();
         recognition.continuous = false;
         recognition.interimResults = false;
-        recognition.lang = language === 'hi' ? 'hi-IN' : 'en-US';
+        recognition.lang = language === 'hi' ? 'hi-IN' : language === 'bho' ? 'bho-IN' : 'en-US';
+
 
         recognition.onstart = () => {
             setIsListening(true);
@@ -208,7 +222,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
         recognitionRef.current = recognition;
 
         return () => {
-            recognition.stop();
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
         };
 
     }, [isOpen, language]);
@@ -422,7 +438,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
         setIsOpen(prev => !prev);
     };
 
-    const handleLanguageSelect = (lang: 'en' | 'hi') => {
+    const handleLanguageSelect = (lang: 'en' | 'hi' | 'bho') => {
         setLanguage(lang);
     };
 
@@ -631,7 +647,9 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
                              <div className="p-2 text-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
                                 {language === 'en' 
                                     ? 'AI assistant is not a medical professional. Always consult a qualified doctor for medical advice.'
-                                    : 'एआई सहायक एक चिकित्सा पेशेवर नहीं है। चिकित्सीय सलाह के लिए हमेशा एक योग्य डॉक्टर से सलाह लें।'
+                                    : language === 'hi'
+                                    ? 'एआई सहायक एक चिकित्सा पेशेवर नहीं है। चिकित्सीय सलाह के लिए हमेशा एक योग्य डॉक्टर से सलाह लें।'
+                                    : 'एआई सहायक कवनो मेडिकल प्रोफेशनल ना ह। डॉक्टरी सलाह खातिर हमेशा एगो जोग डॉक्टर से पूछीं।'
                                 }
                             </div>
                             <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200 dark:border-gray-700 flex items-center bg-white dark:bg-gray-800 rounded-b-2xl relative">
@@ -668,7 +686,7 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
                                         type="text"
                                         value={inputValue}
                                         onChange={(e) => setInputValue(e.target.value)}
-                                        placeholder={language === 'en' ? "Type or say something..." : "कुछ टाइप करें या बोलें..."}
+                                        placeholder={language === 'en' ? "Type or say something..." : language === 'hi' ? "कुछ टाइप करें या बोलें..." : "कुछु लिखीं चाहे बोलीं..."}
                                         className="w-full px-4 py-2 bg-gray-100 rounded-full border border-transparent focus:outline-none focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                                         disabled={isLoading}
                                         onKeyDown={(e) => {
@@ -716,6 +734,12 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
                                     className="w-full px-4 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                                 >
                                     हिन्दी (Hindi)
+                                </button>
+                                <button
+                                    onClick={() => handleLanguageSelect('bho')}
+                                    className="w-full px-4 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-colors"
+                                >
+                                    भोजपुरी (Bhojpuri)
                                 </button>
                             </div>
                         </div>

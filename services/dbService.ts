@@ -139,6 +139,7 @@ export const bookAppointment = async (data: AppointmentIn): Promise<Appointment>
         nutrition_notes: data.nutrition_notes,
         report_pdf_base64,
         status: 'Scheduled',
+        dueDate: data.dueDate || undefined,
     };
     appointments.push(newAppointment);
     saveToStorage(APPOINTMENTS_KEY, appointments);

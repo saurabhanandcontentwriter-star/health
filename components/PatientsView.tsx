@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { User, Appointment, MedicineOrder, LabTestBooking } from '../types';
 import { SearchIcon, StethoscopeIcon, RupeeIcon, ShoppingBagIcon, FileTextIcon, BeakerIcon } from './IconComponents';
@@ -179,15 +178,13 @@ const PatientsView: React.FC<PatientsViewProps> = ({ users, appointments, medici
                     </thead>
                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {filteredPatients.map((patient) => (
-                             <tr key={patient.id} className="dark:hover:bg-gray-700/50">
+                             <tr key={patient.id} className="dark:hover:bg-gray-700/50 cursor-pointer" onClick={() => setSelectedPatientId(patient.id)}>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{patient.firstName} {patient.lastName}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 capitalize">{patient.role}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{patient.phone}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-800 dark:text-gray-100">{formatCurrency(patient.totalIncome)}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                    <button onClick={() => setSelectedPatientId(patient.id)} className="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 font-semibold">
-                                        View History
-                                    </button>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-teal-600 dark:text-teal-400 font-semibold">
+                                    View History
                                 </td>
                             </tr>
                         ))}

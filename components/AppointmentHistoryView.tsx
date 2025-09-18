@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Appointment } from '../types';
-import { StethoscopeIcon, ClockIcon, FileTextIcon, RefreshCwIcon, XCircleIcon } from './IconComponents';
+import { StethoscopeIcon, ClockIcon, FileTextIcon, RefreshCwIcon, XCircleIcon, CalendarIcon } from './IconComponents';
 
 interface AppointmentHistoryViewProps {
   appointments: Appointment[];
@@ -122,11 +122,17 @@ const AppointmentHistoryView: React.FC<AppointmentHistoryViewProps> = ({ appoint
                     <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Dr. {appt.doctor_name}</h2>
                     <StatusBadge status={appt.status} />
                   </div>
-                  <div className="flex items-center text-gray-600 dark:text-gray-400 mt-2 text-sm space-x-4">
+                  <div className="flex flex-col md:flex-row md:items-center text-gray-600 dark:text-gray-400 mt-2 text-sm md:space-x-4 space-y-2 md:space-y-0">
                     <div className="flex items-center">
                       <ClockIcon className="w-4 h-4 mr-1.5" />
                       <span>{new Date(appt.appointment_date + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at {appt.appointment_time}</span>
                     </div>
+                     {appt.dueDate && (
+                        <div className="flex items-center text-orange-600 dark:text-orange-400 font-semibold">
+                            <CalendarIcon className="w-4 h-4 mr-1.5" />
+                            <span>Follow-up due: {new Date(appt.dueDate + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                        </div>
+                    )}
                     {appt.is_repeat_visit && (
                       <div className="flex items-center bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs font-semibold">
                         <RefreshCwIcon className="w-4 h-4 mr-1.5" />
