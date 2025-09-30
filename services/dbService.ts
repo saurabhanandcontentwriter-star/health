@@ -140,6 +140,7 @@ export const bookAppointment = async (data: AppointmentIn): Promise<Appointment>
         report_pdf_base64,
         status: 'Scheduled',
         dueDate: data.dueDate || undefined,
+        bookedBy: data.bookedBy,
     };
     appointments.push(newAppointment);
     saveToStorage(APPOINTMENTS_KEY, appointments);

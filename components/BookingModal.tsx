@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { FileTextIcon, QrCodeIcon, XCircleIcon, CheckCircleIcon, XIcon } from './IconComponents';
 import { generateQrCode } from '../services/qrService';
 import { CONSULTATION_FEE, GST_RATE } from '../utils/constants';
+import PaymentOptions from './PaymentOptions';
 
 interface BookingModalProps {
   doctor: Doctor;
@@ -39,9 +40,6 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
   const [error, setError] = useState('');
   const [confirmedAppointment, setConfirmedAppointment] = useState<Appointment | null>(null);
 
-  // QR Code state
-  const [qrCodeUrl, setQrCodeUrl] = useState('');
-  
   useEffect(() => {
     if (user) {
       setPatientName(`${user.firstName} ${user.lastName}`);
@@ -85,18 +83,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
         return;
     }
 
-    setIsLoading(true);
-    
-    try {
-        const totalAmount = CONSULTATION_FEE * (1 + GST_RATE);
-        const url = await generateQrCode(String(totalAmount));
-        setQrCodeUrl(url);
-        setStep('payment');
-    } catch (err: any) {
-        setError(err.message || 'Could not generate QR code. Please try again.');
-    } finally {
-        setIsLoading(false);
-    }
+    setStep('payment');
   };
 
   const handleConfirmBooking = async () => {
@@ -121,6 +108,7 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
           nutrition_notes: nutritionNotes,
           report_pdf_file: reportPdf,
           dueDate: dueDate,
+          bookedBy: `${user.firstName} ${user.lastName}`,
         });
         setConfirmedAppointment(newAppointment);
         setStep('confirmed');
@@ -325,72 +313,13 @@ const BookingModal: React.FC<BookingModalProps> = ({ doctor, selectedSlot, selec
     const totalAmount = CONSULTATION_FEE + gst;
     
     return (
-        <div className="flex flex-col items-center text-center">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Complete Your Payment</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">to confirm your appointment with Dr. {doctor.name}.</p>
-            
-            {error && (
-                <div className="w-full my-4 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 dark:border-red-400 rounded-r-lg" role="alert">
-                    <div className="flex justify-between items-start">
-                        <div className="flex">
-                            <div className="flex-shrink-0">
-                                <XCircleIcon className="h-5 w-5 text-red-500" />
-                            </div>
-                            <div className="ml-3 text-left">
-                                <h3 className="text-md font-bold text-red-800 dark:text-red-200">An Error Occurred</h3>
-                                <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
-                            </div>
-                        </div>
-                         <button type="button" onClick={() => setError('')} className="ml-3 p-1 -mr-2 -mt-2 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 self-start" aria-label="Dismiss error">
-                            <XIcon className="w-4 h-4" />
-                        </button>
-                    </div>
-                </div>
-            )}
-            
-            <div className="w-full max-w-xs my-4 space-y-2 text-left bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg">
-                <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">Consultation Fee:</span>
-                    <span className="font-medium text-gray-800 dark:text-gray-100">{formatCurrency(CONSULTATION_FEE)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-300">GST ({GST_RATE * 100}%):</span>
-                    <span className="font-medium text-gray-800 dark:text-gray-100">+ {formatCurrency(gst)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg border-t border-gray-300 dark:border-gray-500 pt-2 mt-2">
-                    <span className="text-gray-800 dark:text-gray-100">Total Payable:</span>
-                    <span className="text-teal-600 dark:text-teal-400">{formatCurrency(totalAmount)}</span>
-                </div>
-            </div>
-            
-            <button
-                type="button"
-                onClick={handleConfirmBooking}
-                disabled={isLoading || !qrCodeUrl}
-                className="p-4 my-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 h-64 w-64 flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:cursor-not-allowed disabled:opacity-70 transition-transform transform hover:scale-105"
-                aria-label="Click to confirm payment"
-                title="Click to confirm payment"
-            >
-            {qrCodeUrl ? (
-                <img src={qrCodeUrl} alt="Payment QR Code" className="w-56 h-56 object-contain rounded" />
-            ) : (
-                <div className="flex flex-col items-center justify-center text-center p-4">
-                    <QrCodeIcon className="h-12 w-12 text-gray-400" />
-                    <p className="text-gray-500 text-sm mt-2">Generating QR Code...</p>
-                </div>
-            )}
-            </button>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Scan with any UPI app or <span className="font-semibold">click the QR code</span> to confirm.</p>
-            
-            <div className="flex justify-center space-x-4 pt-6 w-full">
-                <button type="button" onClick={() => { setError(''); setStep('details'); }} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">
-                Back
-                </button>
-                <button type="button" onClick={handleConfirmBooking} disabled={isLoading || !qrCodeUrl} className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 transition-colors disabled:bg-teal-400 disabled:cursor-not-allowed">
-                {isLoading ? 'Confirming...' : "I've Paid, Confirm"}
-                </button>
-            </div>
-        </div>
+        <PaymentOptions
+            totalAmount={totalAmount}
+            onPaymentSuccess={handleConfirmBooking}
+            onBack={() => { setError(''); setStep('details'); }}
+            isLoading={isLoading}
+            itemName="Doctor's Appointment"
+        />
     );
   };
 

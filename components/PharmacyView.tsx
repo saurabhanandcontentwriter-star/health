@@ -6,6 +6,7 @@ import * as db from '../services/dbService';
 import AddressEditor from './AddressEditor';
 import { MedicineOrderTracker } from './OrderTrackers';
 import { GST_RATE } from '../utils/constants';
+import PaymentOptions from './PaymentOptions';
 
 
 const PROTECT_PROMISE_FEE = 9;
@@ -137,7 +138,6 @@ const CheckoutView: React.FC<{
     const [step, setStep] = useState<'address' | 'payment' | 'confirmed'>('address');
     const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
     const [isAddingNewAddress, setIsAddingNewAddress] = useState(false);
-    const [qrCodeUrl, setQrCodeUrl] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [lastOrder, setLastOrder] = useState<MedicineOrder | null>(null);
@@ -164,16 +164,7 @@ const CheckoutView: React.FC<{
         if (!selectedAddressId) {
             setError('Please select or add a delivery address.'); return;
         }
-        setIsLoading(true);
-        try {
-            const url = await generateQrCode(totalAmount.toFixed(2));
-            setQrCodeUrl(url);
-            setStep('payment');
-        } catch (err: any) {
-            setError(err.message || 'Could not generate QR code.');
-        } finally {
-            setIsLoading(false);
-        }
+        setStep('payment');
     };
     
     const handleConfirmOrder = () => {
@@ -345,38 +336,13 @@ const CheckoutView: React.FC<{
                  </>
             )}
             {step === 'payment' && (
-                <div className="flex flex-col items-center text-center">
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">Complete Your Payment</h2>
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">Pay <span className="font-bold">{formatCurrency(totalAmount)}</span> to confirm your order.</p>
-                     <div className="p-4 my-4 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 h-64 w-64 flex items-center justify-center">
-                        {qrCodeUrl ? (
-                             <img src={qrCodeUrl} alt="Payment QR Code" className="w-56 h-56 object-contain" />
-                        ) : (
-                            <div className="flex flex-col items-center text-center p-4">
-                                <QrCodeIcon className="h-12 w-12 text-gray-400" />
-                                <p className="text-red-500 text-sm mt-2">{error || "Generating QR..."}</p>
-                            </div>
-                        )}
-                    </div>
-                     <p className="text-xs text-gray-500 dark:text-gray-400">Scan with any UPI app</p>
-                    <div className="flex justify-center space-x-4 pt-6 w-full">
-                        <button type="button" onClick={() => setStep('address')} className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500">Back</button>
-                        <button type="button" onClick={handleConfirmOrder} disabled={isLoading || !qrCodeUrl} className="px-6 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 disabled:bg-teal-400">
-                            {isLoading ? 'Confirming...' : "I've Paid, Confirm"}
-                        </button>
-                    </div>
-                    {error && qrCodeUrl && (
-                        <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-lg flex items-center justify-between text-sm text-red-700 dark:text-red-300 w-full">
-                            <div className="flex items-center">
-                                <XCircleIcon className="w-5 h-5 mr-3 flex-shrink-0" />
-                                <span>{error}</span>
-                            </div>
-                            <button type="button" onClick={() => setError('')} className="p-1 -mr-1 rounded-full text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50" aria-label="Dismiss error">
-                                <XIcon className="w-4 h-4" />
-                            </button>
-                        </div>
-                    )}
-                </div>
+                <PaymentOptions
+                    totalAmount={totalAmount}
+                    onPaymentSuccess={handleConfirmOrder}
+                    onBack={() => setStep('address')}
+                    isLoading={isLoading}
+                    itemName="Medicine Order"
+                />
             )}
              {step === 'confirmed' && (
                 <div className="text-center py-8">
