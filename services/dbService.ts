@@ -1,4 +1,4 @@
-import { Doctor, Appointment, DoctorIn, AppointmentIn, AuthLog, User, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, MedicineIn, LabTest, LabTestBooking, LabTestBookingIn, DeliveryBoy, LabTestIn } from '../types';
+import { Doctor, Appointment, DoctorIn, AppointmentIn, AuthLog, User, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, MedicineIn, LabTest, LabTestBooking, LabTestBookingIn, DeliveryBoy, LabTestIn, MedicineReminder, LabTestReminder } from '../types';
 import { GST_RATE } from '../utils/constants';
 
 // Keys for localStorage
@@ -14,6 +14,8 @@ const ADDRESSES_KEY = 'bhc-addresses';
 const LAB_TESTS_KEY = 'bhc-lab-tests';
 const LAB_TEST_BOOKINGS_KEY = 'bhc-lab-test-bookings';
 const WISHLIST_KEY_PREFIX = 'bhc-wishlist-';
+const MEDICINE_REMINDERS_KEY = 'bhc-medicine-reminders';
+const LAB_TEST_REMINDERS_KEY = 'bhc-lab-test-reminders';
 
 // --- Helper Functions ---
 const getFromStorage = <T>(key: string, defaultValue: T): T => {
@@ -67,6 +69,8 @@ const initializeData = () => {
     if (!localStorage.getItem(USERS_KEY)) saveToStorage(USERS_KEY, initialUsers);
     if (!localStorage.getItem(MEDICINES_KEY)) saveToStorage(MEDICINES_KEY, initialMedicines);
     if (!localStorage.getItem(LAB_TESTS_KEY)) saveToStorage(LAB_TESTS_KEY, initialLabTests);
+    if (!localStorage.getItem(MEDICINE_REMINDERS_KEY)) saveToStorage(MEDICINE_REMINDERS_KEY, []);
+    if (!localStorage.getItem(LAB_TEST_REMINDERS_KEY)) saveToStorage(LAB_TEST_REMINDERS_KEY, []);
 };
 initializeData();
 
@@ -409,4 +413,61 @@ export const removeFromWishlist = (userId: number, medicineId: number): void => 
     let wishlist = getWishlist(userId);
     wishlist = wishlist.filter(id => id !== medicineId);
     saveToStorage(getWishlistKey(userId), wishlist);
+};
+
+// --- Medicine Reminder Management ---
+export const getMedicineRemindersForUser = (userId: number): MedicineReminder[] => getFromStorage<MedicineReminder[]>(MEDICINE_REMINDERS_KEY, []).filter(r => r.userId === userId);
+
+export const addMedicineReminder = (reminderData: Omit<MedicineReminder, 'id'>): MedicineReminder => {
+    const reminders = getFromStorage<MedicineReminder[]>(MEDICINE_REMINDERS_KEY, []);
+    // Check for existing reminder for the same medicine in the same order
+    const existingIndex = reminders.findIndex(r => r.userId === reminderData.userId && r.orderId === reminderData.orderId && r.medicineId === reminderData.medicineId);
+    
+    if (existingIndex !== -1) {
+        // Update existing reminder
+        const updatedReminder = { ...reminders[existingIndex], ...reminderData, id: reminders[existingIndex].id };
+        reminders[existingIndex] = updatedReminder;
+        saveToStorage(MEDICINE_REMINDERS_KEY, reminders);
+        return updatedReminder;
+    } else {
+        // Add new reminder
+        const newId = reminders.length > 0 ? Math.max(...reminders.map(r => r.id)) + 1 : 1;
+        const newReminder: MedicineReminder = { id: newId, ...reminderData };
+        reminders.push(newReminder);
+        saveToStorage(MEDICINE_REMINDERS_KEY, reminders);
+        return newReminder;
+    }
+};
+
+export const deleteMedicineReminder = (userId: number, orderId: number, medicineId: number): void => {
+    let reminders = getFromStorage<MedicineReminder[]>(MEDICINE_REMINDERS_KEY, []);
+    reminders = reminders.filter(r => !(r.userId === userId && r.orderId === orderId && r.medicineId === medicineId));
+    saveToStorage(MEDICINE_REMINDERS_KEY, reminders);
+};
+
+// --- Lab Test Reminder Management ---
+export const getLabTestRemindersForUser = (userId: number): LabTestReminder[] => getFromStorage<LabTestReminder[]>(LAB_TEST_REMINDERS_KEY, []).filter(r => r.userId === userId);
+
+export const addLabTestReminder = (reminderData: Omit<LabTestReminder, 'id'>): LabTestReminder => {
+    const reminders = getFromStorage<LabTestReminder[]>(LAB_TEST_REMINDERS_KEY, []);
+    const existingIndex = reminders.findIndex(r => r.userId === reminderData.userId && r.labTestBookingId === reminderData.labTestBookingId);
+    
+    if (existingIndex !== -1) {
+        const updatedReminder = { ...reminders[existingIndex], ...reminderData, id: reminders[existingIndex].id };
+        reminders[existingIndex] = updatedReminder;
+        saveToStorage(LAB_TEST_REMINDERS_KEY, reminders);
+        return updatedReminder;
+    } else {
+        const newId = reminders.length > 0 ? Math.max(...reminders.map(r => r.id)) + 1 : 1;
+        const newReminder: LabTestReminder = { id: newId, ...reminderData };
+        reminders.push(newReminder);
+        saveToStorage(LAB_TEST_REMINDERS_KEY, reminders);
+        return newReminder;
+    }
+};
+
+export const deleteLabTestReminder = (userId: number, labTestBookingId: number): void => {
+    let reminders = getFromStorage<LabTestReminder[]>(LAB_TEST_REMINDERS_KEY, []);
+    reminders = reminders.filter(r => !(r.userId === userId && r.labTestBookingId === labTestBookingId));
+    saveToStorage(LAB_TEST_REMINDERS_KEY, reminders);
 };

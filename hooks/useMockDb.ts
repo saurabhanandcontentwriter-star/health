@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import * as db from '../services/dbService';
-import { User, Doctor, Appointment, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, LabTest, LabTestBooking } from '../types';
+import { User, Doctor, Appointment, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, LabTest, LabTestBooking, MedicineReminder, LabTestReminder } from '../types';
 
 export function useMockDb(currentUser: User | null) {
     const [data, setData] = useState({
@@ -18,6 +18,8 @@ export function useMockDb(currentUser: User | null) {
         userAppointments: [] as Appointment[],
         medicineOrders: [] as MedicineOrder[],
         labTestBookings: [] as LabTestBooking[],
+        medicineReminders: [] as MedicineReminder[],
+        labTestReminders: [] as LabTestReminder[],
     });
 
     const refreshData = useCallback(() => {
@@ -36,6 +38,8 @@ export function useMockDb(currentUser: User | null) {
             medicineOrders: [] as MedicineOrder[],
             labTestBookings: [] as LabTestBooking[],
             addresses: [] as Address[],
+            medicineReminders: [] as MedicineReminder[],
+            labTestReminders: [] as LabTestReminder[],
         };
 
         if (currentUser) {
@@ -44,6 +48,8 @@ export function useMockDb(currentUser: User | null) {
                 medicineOrders: db.getMedicineOrdersForUser(currentUser.id),
                 labTestBookings: db.getLabTestBookingsForUser(currentUser.id),
                 addresses: db.getAddressesForUser(currentUser.id),
+                medicineReminders: db.getMedicineRemindersForUser(currentUser.id),
+                labTestReminders: db.getLabTestRemindersForUser(currentUser.id),
             };
         }
 

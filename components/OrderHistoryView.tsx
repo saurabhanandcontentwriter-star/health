@@ -1,20 +1,24 @@
 import React from 'react';
-import { MedicineOrder, LabTestBooking } from '../types';
+import { MedicineOrder, LabTestBooking, MedicineReminder, LabTestReminder } from '../types';
 import { MedicineOrderTracker, LabTestBookingTracker } from './OrderTrackers';
-import { ArchiveIcon, TestTubeIcon, ShoppingBagIcon, FileTextIcon } from './IconComponents';
+import { ArchiveIcon, TestTubeIcon, ShoppingBagIcon, FileTextIcon, BellIcon } from './IconComponents';
 
 interface OrderHistoryViewProps {
     medicineOrders: MedicineOrder[];
     labTestBookings: LabTestBooking[];
     activeTab: 'medicines' | 'labTests';
     setActiveTab: (tab: 'medicines' | 'labTests') => void;
+    medicineReminders: MedicineReminder[];
+    labTestReminders: LabTestReminder[];
+    onSetMedicineReminder: (order: MedicineOrder, item: MedicineOrder['items'][0]) => void;
+    onSetLabTestReminder: (booking: LabTestBooking) => void;
 }
 
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 };
 
-const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, labTestBookings, activeTab, setActiveTab }) => {
+const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, labTestBookings, activeTab, setActiveTab, medicineReminders, labTestReminders, onSetMedicineReminder, onSetLabTestReminder }) => {
     const sortedMedicineOrders = [...medicineOrders].sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
     const sortedLabTestBookings = [...labTestBookings].sort((a, b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
 
@@ -159,8 +163,22 @@ const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, lab
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-2">Items</h4>
-                                         <ul className="space-y-1 list-disc list-inside text-sm text-gray-600 dark:text-gray-300">
-                                            {order.items.map(item => <li key={item.medicineId}>{item.quantity} x {item.medicineName}</li>)}
+                                         <ul className="space-y-2">
+                                            {order.items.map(item => {
+                                                const reminder = medicineReminders.find(r => r.orderId === order.id && r.medicineId === item.medicineId);
+                                                return (
+                                                    <li key={item.medicineId} className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-300">
+                                                        <span>{item.quantity} x {item.medicineName}</span>
+                                                        <button 
+                                                            onClick={() => onSetMedicineReminder(order, item)}
+                                                            className={`p-1.5 rounded-full transition-colors ${reminder ? 'text-teal-500 bg-teal-100 dark:bg-teal-900/50' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                                            aria-label="Set Reminder"
+                                                        >
+                                                            <BellIcon className="w-4 h-4" />
+                                                        </button>
+                                                    </li>
+                                                );
+                                            })}
                                         </ul>
                                     </div>
                                     <div className="md:border-l md:pl-6 dark:border-gray-700">
@@ -182,30 +200,44 @@ const OrderHistoryView: React.FC<OrderHistoryViewProps> = ({ medicineOrders, lab
             {activeTab === 'labTests' && (
                  <div className="space-y-6">
                     {sortedLabTestBookings.length > 0 ? (
-                        sortedLabTestBookings.map(booking => (
-                            <div key={booking.id} className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transition-all ${booking.status === 'Cancelled' ? 'opacity-60 bg-gray-50 dark:bg-gray-800/50' : ''}`}>
-                                <div className="flex flex-col md:flex-row justify-between md:items-start border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
-                                    <div>
-                                        <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">{booking.testName}</h3>
-                                        <p className="text-sm text-gray-500 dark:text-gray-400">Booked on {new Date(booking.bookingDate).toLocaleDateString()}</p>
+                        sortedLabTestBookings.map(booking => {
+                            const reminder = labTestReminders.find(r => r.labTestBookingId === booking.id);
+                            return (
+                                <div key={booking.id} className={`bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg transition-all ${booking.status === 'Cancelled' ? 'opacity-60 bg-gray-50 dark:bg-gray-800/50' : ''}`}>
+                                    <div className="flex flex-col md:flex-row justify-between md:items-start border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+                                        <div>
+                                            <h3 className="font-bold text-lg text-gray-800 dark:text-gray-100">{booking.testName}</h3>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">Booked on {new Date(booking.bookingDate).toLocaleDateString()}</p>
+                                        </div>
+                                        <div className="flex items-center space-x-4 mt-2 md:mt-0">
+                                            <div className={`text-lg md:text-xl font-bold ${booking.status === 'Cancelled' ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-teal-600 dark:text-teal-400'}`}>
+                                                {formatCurrency(booking.totalAmount)}
+                                            </div>
+                                            {booking.status === 'Booked' && (
+                                                <button 
+                                                    onClick={() => onSetLabTestReminder(booking)}
+                                                    className={`p-2 rounded-full transition-colors ${reminder ? 'text-teal-500 bg-teal-100 dark:bg-teal-900/50' : 'text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                                                    aria-label="Set Reminder"
+                                                >
+                                                    <BellIcon className="w-5 h-5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className={`text-lg md:text-xl font-bold mt-2 md:mt-0 ${booking.status === 'Cancelled' ? 'text-gray-500 dark:text-gray-400 line-through' : 'text-teal-600 dark:text-teal-400'}`}>
-                                        {formatCurrency(booking.totalAmount)}
-                                    </div>
+                                    
+                                    {booking.status === 'Cancelled' ? (
+                                        <div className="text-center py-4">
+                                            <p className="text-red-600 font-bold text-lg">Booking Cancelled</p>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <h4 className="font-semibold text-gray-700 dark:text-gray-200">Booking Status</h4>
+                                            <LabTestBookingTracker booking={booking} />
+                                        </div>
+                                    )}
                                 </div>
-                                
-                                {booking.status === 'Cancelled' ? (
-                                    <div className="text-center py-4">
-                                        <p className="text-red-600 font-bold text-lg">Booking Cancelled</p>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <h4 className="font-semibold text-gray-700 dark:text-gray-200">Booking Status</h4>
-                                        <LabTestBookingTracker booking={booking} />
-                                    </div>
-                                )}
-                            </div>
-                        ))
+                            )
+                        })
                     ) : (
                          <div className="text-center py-16 px-4 bg-white dark:bg-gray-800 rounded-xl shadow-lg">
                             <ArchiveIcon className="mx-auto h-12 w-12 text-gray-400" />

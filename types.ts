@@ -207,3 +207,22 @@ export interface Message {
     type?: 'wellness_scan_result';
     status?: 'loading' | 'complete' | 'error';
 }
+
+export interface MedicineReminder {
+  id: number;
+  userId: number;
+  medicineId: number;
+  orderId: number;
+  medicineName: string;
+  times: string[]; // "HH:mm" format
+  startDate: string; // "YYYY-MM-DD"
+  durationDays: number;
+}
+
+export interface LabTestReminder {
+  id: number;
+  userId: number;
+  labTestBookingId: number;
+  testName: string;
+  remindBeforeMinutes: number;
+}

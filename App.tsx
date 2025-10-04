@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import Header from './components/Header';
 import DoctorCard from './components/DoctorCard';
@@ -20,13 +21,24 @@ import OrderHistoryView from './components/OrderHistoryView';
 import { useAuth } from './contexts/AuthContext';
 import * as db from './services/dbService';
 import { useMockDb } from './hooks/useMockDb';
-import { User, Doctor, Appointment, AppointmentIn, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, LabTest, LabTestBooking, LabTestBookingIn, Message } from './types';
-import { SearchIcon, StethoscopeIcon } from './components/IconComponents';
+import { User, Doctor, Appointment, AppointmentIn, PharmaCompany, UserSession, Medicine, MedicineOrder, Address, LabTest, LabTestBooking, LabTestBookingIn, Message, MedicineReminder, LabTestReminder } from './types';
+import { SearchIcon, StethoscopeIcon, ClockIcon, PillIcon, TestTubeIcon } from './components/IconComponents';
 import LabTestBookingModal from './components/LabTestBookingModal';
 import AvailabilityModal from './components/AvailabilityModal';
 import DoctorDetailModal from './components/DoctorDetailModal';
 import Sidebar from './components/Sidebar';
 import PatientSidebar from './components/PatientSidebar';
+import MedicineReminderModal from './components/MedicineReminderModal';
+import LabTestReminderModal from './components/LabTestReminderModal';
+import { parseTime } from './utils/timeUtils';
+
+
+interface GenericReminder {
+  id: string;
+  title: string;
+  message: string;
+  icon: React.ReactNode;
+}
 
 const App: React.FC = () => {
   const [permissionsGranted, setPermissionsGranted] = useState(localStorage.getItem('permissions-granted') === 'true');
@@ -46,6 +58,8 @@ const App: React.FC = () => {
       userAppointments,
       medicineOrders,
       labTestBookings,
+      medicineReminders,
+      labTestReminders,
       refreshData
   } = useMockDb(user);
 
@@ -65,8 +79,10 @@ const App: React.FC = () => {
   const [bookingLabTest, setBookingLabTest] = useState<LabTest | null>(null);
   const [videoCallDoctor, setVideoCallDoctor] = useState<Doctor | null>(null);
   
-  const [reminders, setReminders] = useState<Appointment[]>([]);
+  const [appointmentReminders, setAppointmentReminders] = useState<Appointment[]>([]);
   const [notificationReminders, setNotificationReminders] = useState<Appointment[]>([]);
+  const [genericReminders, setGenericReminders] = useState<GenericReminder[]>([]);
+  const [reminderModalData, setReminderModalData] = useState<{type: 'medicine' | 'lab_test', data: any} | null>(null);
 
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [botMessage, setBotMessage] = useState<Message | null>(null);
@@ -102,7 +118,7 @@ const App: React.FC = () => {
       }
 
       // Check for appointment reminders
-      const checkReminders = () => {
+      const checkAppointmentReminders = () => {
           const now = new Date();
 
           const upcomingAppointments = userAppointments.filter(appt => {
@@ -137,7 +153,7 @@ const App: React.FC = () => {
           const newRemindersForToast = upcomingAppointments.filter(a => !shownToastReminders.includes(a.id));
 
           if (newRemindersForToast.length > 0) {
-              setReminders(prev => [...prev, ...newRemindersForToast]);
+              setAppointmentReminders(prev => [...prev, ...newRemindersForToast]);
               sessionStorage.setItem('shownReminders', JSON.stringify([...shownToastReminders, ...newRemindersForToast.map(r => r.id)]));
           }
           
@@ -146,10 +162,94 @@ const App: React.FC = () => {
           const activeNotifications = upcomingAppointments.filter(a => !dismissedNotifications.includes(a.id));
           setNotificationReminders(activeNotifications);
       };
-      checkReminders();
+      checkAppointmentReminders();
 
     }
   }, [isAuthenticated, user, currentView, userAppointments]);
+  
+   // Centralized reminder checker
+    useEffect(() => {
+        const checkReminders = () => {
+            if (!user) return;
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            
+            const shownTodayKey = `shown-reminders-${todayStr}`;
+            const shownToday = JSON.parse(localStorage.getItem(shownTodayKey) || '[]');
+
+            const newReminders: GenericReminder[] = [];
+
+            // 1. Medicine Reminders
+            medicineReminders.forEach(mr => {
+                const startDate = new Date(mr.startDate);
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + mr.durationDays);
+
+                if (now >= startDate && now < endDate && mr.times.includes(currentTime)) {
+                    const reminderId = `med-${mr.id}-${todayStr}-${currentTime}`;
+                    if (!shownToday.includes(reminderId)) {
+                        newReminders.push({
+                            id: reminderId,
+                            title: 'Medicine Reminder',
+                            message: `Time to take your <strong>${mr.medicineName}</strong>.`,
+                            icon: <PillIcon className="h-6 w-6 text-teal-500" />
+                        });
+                        shownToday.push(reminderId);
+                    }
+                }
+            });
+
+            // 2. Lab Test Reminders
+            labTestReminders.forEach(lr => {
+                const booking = labTestBookings.find(b => b.id === lr.labTestBookingId);
+                if (booking && booking.status === 'Booked') {
+                    // Assuming sample collection is the day after booking for this mock. A real app would store the collection date.
+                    const collectionDate = new Date(booking.bookingDate);
+                    collectionDate.setDate(collectionDate.getDate() + 1);
+
+                    const slotTimeMatch = booking.slot.match(/(\d{1,2}:\d{2}\s*(?:AM|PM))|(\d{1,2}\s*(?:AM|PM))/);
+                    if (slotTimeMatch) {
+                        const slotStartTimeStr = slotTimeMatch[0].includes(':') ? slotTimeMatch[0] : `${slotTimeMatch[0].split(' ')[0]}:00 ${slotTimeMatch[0].split(' ')[1]}`;
+                        const slotStartTime = parseTime(slotStartTimeStr);
+                        
+                        collectionDate.setHours(slotStartTime.getHours(), slotStartTime.getMinutes());
+                        
+                        const reminderTime = new Date(collectionDate.getTime() - lr.remindBeforeMinutes * 60000);
+
+                        if (now.getFullYear() === reminderTime.getFullYear() &&
+                            now.getMonth() === reminderTime.getMonth() &&
+                            now.getDate() === reminderTime.getDate() &&
+                            now.getHours() === reminderTime.getHours() &&
+                            now.getMinutes() === reminderTime.getMinutes()
+                        ) {
+                             const reminderId = `lab-${lr.id}`;
+                             if (!shownToday.includes(reminderId)) {
+                                newReminders.push({
+                                    id: reminderId,
+                                    title: 'Lab Test Reminder',
+                                    message: `Your sample collection for <strong>${lr.testName}</strong> is in ${lr.remindBeforeMinutes} minutes.`,
+                                    icon: <TestTubeIcon className="h-6 w-6 text-teal-500" />
+                                });
+                                shownToday.push(reminderId);
+                            }
+                        }
+                    }
+                }
+            });
+
+            if (newReminders.length > 0) {
+                setGenericReminders(prev => [...prev, ...newReminders]);
+                localStorage.setItem(shownTodayKey, JSON.stringify(shownToday));
+            }
+        };
+
+        const intervalId = setInterval(checkReminders, 60000); // Check every minute
+        checkReminders(); // Initial check
+
+        return () => clearInterval(intervalId);
+    }, [user, medicineReminders, labTestReminders, labTestBookings]);
+
 
   const handleSearch = () => {
     const results = db.getDoctors(location, specialty);
@@ -201,8 +301,12 @@ const App: React.FC = () => {
     });
   };
   
-  const handleDismissReminder = (id: number) => {
-      setReminders(prev => prev.filter(r => r.id !== id));
+  const handleDismissAppointmentReminder = (id: number) => {
+      setAppointmentReminders(prev => prev.filter(r => r.id !== id));
+  };
+  
+  const handleDismissGenericReminder = (id: string) => {
+      setGenericReminders(prev => prev.filter(r => r.id !== id));
   };
   
   const handleDismissNotification = (id: number) => {
@@ -257,6 +361,10 @@ const App: React.FC = () => {
             labTestBookings={labTestBookings} 
             activeTab={activeOrderHistoryTab} 
             setActiveTab={setActiveOrderHistoryTab}
+            medicineReminders={medicineReminders}
+            labTestReminders={labTestReminders}
+            onSetMedicineReminder={(order, item) => setReminderModalData({ type: 'medicine', data: { order, item } })}
+            onSetLabTestReminder={(booking) => setReminderModalData({ type: 'lab_test', data: booking })}
         />;
     }
     if (currentView === 'appointmentHistory') {
@@ -469,14 +577,59 @@ const App: React.FC = () => {
         />
       )}
 
+       {reminderModalData?.type === 'medicine' && user &&
+            <MedicineReminderModal
+                isOpen={true}
+                onClose={() => setReminderModalData(null)}
+                onSave={() => {
+                    refreshData();
+                    setReminderModalData(null);
+                }}
+                userId={user.id}
+                order={reminderModalData.data.order}
+                item={reminderModalData.data.item}
+                existingReminder={medicineReminders.find(r => r.orderId === reminderModalData.data.order.id && r.medicineId === reminderModalData.data.item.medicineId)}
+            />
+        }
+        {reminderModalData?.type === 'lab_test' && user &&
+            <LabTestReminderModal
+                isOpen={true}
+                onClose={() => setReminderModalData(null)}
+                onSave={() => {
+                    refreshData();
+                    setReminderModalData(null);
+                }}
+                userId={user.id}
+                booking={reminderModalData.data}
+                existingReminder={labTestReminders.find(r => r.labTestBookingId === reminderModalData.data.id)}
+            />
+        }
+
+
       {showWelcomeModal && user && <WelcomeModal onClose={() => setShowWelcomeModal(false)} userName={user.firstName} />}
 
       <div className="fixed top-24 right-4 z-[100] space-y-4">
-          {reminders.map(appt => (
+          {appointmentReminders.map(appt => {
+            const isToday = new Date().toISOString().split('T')[0] === appt.appointment_date;
+            const message = `You have an upcoming appointment with <strong>${appt.doctor_name}</strong> ${isToday ? `at ${appt.appointment_time} today.` : `at ${appt.appointment_time} tomorrow.`}`;
+            return (
               <ReminderToast 
-                  key={appt.id} 
-                  appointment={appt} 
-                  onDismiss={handleDismissReminder} 
+                  key={`appt-${appt.id}`} 
+                  reminder={{
+                    id: `appt-${appt.id}`,
+                    title: 'Appointment Reminder',
+                    message: message,
+                    icon: <ClockIcon className="h-6 w-6 text-teal-500" />
+                  }} 
+                  onDismiss={() => handleDismissAppointmentReminder(appt.id)} 
+              />
+            )
+          })}
+          {genericReminders.map(reminder => (
+              <ReminderToast 
+                  key={reminder.id} 
+                  reminder={reminder} 
+                  onDismiss={handleDismissGenericReminder} 
               />
           ))}
       </div>
