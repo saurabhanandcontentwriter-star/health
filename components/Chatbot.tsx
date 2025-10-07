@@ -49,9 +49,10 @@ declare global {
 import React, { useState, useEffect, useRef } from 'react';
 import { startChat, generateContentWithImage } from '../services/geminiService';
 import type { Chat, GenerateContentResponse } from '@google/genai';
-import { Doctor, LabTest, Message, Appointment, LabTestBooking } from '../types';
+import { Doctor, LabTest, Message, Appointment, LabTestBooking, User, Address, AppointmentIn, LabTestBookingIn } from '../types';
 import { MinimizeIcon, SendIcon, BotIcon, StethoscopeIcon, MapPinIcon, PlusIcon, PaperclipIcon, ImageIcon, CameraIcon, XIcon, FileTextIcon, CalendarIcon, MicIcon, ThermometerIcon, RefreshCwIcon, XCircleIcon } from './IconComponents';
 import FaceScanModal from './FaceScanModal';
+import { parseTime } from '../utils/timeUtils';
 
 const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -80,9 +81,29 @@ interface ChatbotProps {
     onViewDoctorDetails: (doctor: Doctor) => void;
     newMessage?: Message | null;
     onNewMessageConsumed: () => void;
+    user: User | null;
+    addresses: Address[];
+    onBookAppointment: (data: AppointmentIn) => Promise<Appointment>;
+    onConfirmBookLabTest: (data: LabTestBookingIn) => { message: string };
 }
 
-const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labTestBookings, onShowAvailability, onBookLabTest, setCurrentView, onStartVideoCall, onViewDoctorDetails, newMessage, onNewMessageConsumed }) => {
+const Chatbot: React.FC<ChatbotProps> = ({ 
+    doctors, 
+    labTests, 
+    appointments, 
+    labTestBookings, 
+    onShowAvailability, 
+    onBookLabTest, 
+    setCurrentView, 
+    onStartVideoCall, 
+    onViewDoctorDetails, 
+    newMessage, 
+    onNewMessageConsumed,
+    user,
+    addresses,
+    onBookAppointment,
+    onConfirmBookLabTest
+}) => {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
@@ -292,6 +313,32 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
             setIsLoading(false);
         }
     };
+    
+    const parseDateString = (dateStr: string): string => {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+        if (dateStr.toLowerCase() === 'today') return formatDate(today);
+        if (dateStr.toLowerCase() === 'tomorrow') return formatDate(tomorrow);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+        
+        return dateStr;
+    };
+    
+    const mapSlotDescription = (desc: string): string => {
+        const lowerDesc = desc.toLowerCase();
+        const slots = ["Now", "Morning (8 AM - 10 AM)", "Afternoon (12 PM - 2 PM)", "Evening (4 PM - 6 PM)"];
+        if (lowerDesc.includes('now')) return slots[0];
+        if (lowerDesc.includes('morning')) return slots[1];
+        if (lowerDesc.includes('afternoon')) return slots[2];
+        if (lowerDesc.includes('evening')) return slots[3];
+        
+        const matchingSlot = slots.find(s => s.toLowerCase().includes(lowerDesc));
+        return matchingSlot || slots[1]; // Default to morning
+    };
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -336,8 +383,68 @@ const Chatbot: React.FC<ChatbotProps> = ({ doctors, labTests, appointments, labT
                 const videoCallCommand = 'START_VIDEO_CALL:';
                 const pharmacyCommand = 'GO_TO_PHARMACY:';
                 const faceScanCommand = 'SCAN_FACE:';
+                const bookAppointmentCommand = 'BOOK_APPOINTMENT:';
+                const confirmLabTestBookingCommand = 'CONFIRM_LAB_TEST_BOOKING:';
                 
-                if (modelResponseText.includes(searchCommand)) {
+                if (modelResponseText.includes(bookAppointmentCommand)) {
+                    const payload = JSON.parse(modelResponseText.substring(modelResponseText.indexOf('{')));
+                    const { doctorName, date, time } = payload;
+                    
+                    const doctor = doctors.find(d => d.name.toLowerCase().includes(doctorName.toLowerCase()));
+
+                    if (!doctor) {
+                         setMessages(prev => [...prev, { role: 'model', text: `Sorry, I couldn't find a doctor named "${doctorName}". Please check the name and try again.`, timestamp: new Date().toISOString() }]);
+                    } else if (user) {
+                        const requestedDate = parseDateString(date);
+                        const [startTimeStr, endTimeStr] = doctor.available_time.split(' - ');
+                        const availabilityStart = parseTime(startTimeStr);
+                        const availabilityEnd = parseTime(endTimeStr);
+                        const requestedTime = parseTime(time);
+                        
+                        if (requestedTime >= availabilityStart && requestedTime < availabilityEnd) {
+                            try {
+                                await onBookAppointment({
+                                    userId: user.id,
+                                    patient_name: `${user.firstName} ${user.lastName}`,
+                                    doctor_id: doctor.id,
+                                    appointment_date: requestedDate,
+                                    appointment_time: time,
+                                    is_repeat_visit: false, heart_beat_rate: '', symptoms: `Booked via AI Bot`, blood_test_notes: '', nutrition_notes: '', bookedBy: 'AI Bot',
+                                });
+                                // Success message is handled by App.tsx's `setBotMessage`
+                            } catch (e) {
+                                setMessages(prev => [...prev, { role: 'model', text: `Sorry, I couldn't book the appointment due to an error. Please try again or book manually.`, timestamp: new Date().toISOString() }]);
+                            }
+                        } else {
+                            setMessages(prev => [...prev, { role: 'model', text: `Dr. ${doctor.name} is not available at ${time}. Their available hours are ${doctor.available_time}. Please suggest another time.`, timestamp: new Date().toISOString() }]);
+                        }
+                    }
+                } else if (modelResponseText.includes(confirmLabTestBookingCommand)) {
+                     const payload = JSON.parse(modelResponseText.substring(modelResponseText.indexOf('{')));
+                     const { testName, slot } = payload;
+                     const test = labTests.find(t => t.name.toLowerCase().includes(testName.toLowerCase()));
+
+                     if (!test) {
+                        setMessages(prev => [...prev, { role: 'model', text: `Sorry, I couldn't find a test named "${testName}".`, timestamp: new Date().toISOString() }]);
+                     } else if (!addresses || addresses.length === 0) {
+                        setMessages(prev => [...prev, { role: 'model', text: "I can't book the test because you don't have a saved address for sample collection. Please add an address in your profile first.", timestamp: new Date().toISOString() }]);
+                     } else if (user) {
+                        const defaultAddress = addresses[0];
+                        const mappedSlot = mapSlotDescription(slot);
+                        try {
+                            onConfirmBookLabTest({
+                                userId: user.id,
+                                patientName: `${user.firstName} ${user.lastName}`,
+                                testId: test.id,
+                                slot: mappedSlot,
+                                address: defaultAddress
+                            });
+                            // Success message is handled by App.tsx
+                        } catch(e) {
+                             setMessages(prev => [...prev, { role: 'model', text: `Sorry, I couldn't book the lab test due to an error.`, timestamp: new Date().toISOString() }]);
+                        }
+                     }
+                } else if (modelResponseText.includes(searchCommand)) {
                     try {
                         const payload = modelResponseText.substring(modelResponseText.indexOf(searchCommand) + searchCommand.length);
                         const jsonStart = payload.indexOf('{');

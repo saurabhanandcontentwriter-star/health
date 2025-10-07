@@ -646,6 +646,10 @@ const App: React.FC = () => {
         onStartVideoCall={handleStartVideoCall}
         newMessage={botMessage}
         onNewMessageConsumed={() => setBotMessage(null)}
+        user={user}
+        addresses={addresses}
+        onBookAppointment={handleBookAppointment}
+        onConfirmBookLabTest={handleBookLabTest}
       />
     </div>
   );
